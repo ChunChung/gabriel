@@ -36,6 +36,9 @@ from gabriel.common.config import ServiceMeta as SERVICE_META
 
 import Image
 import io
+import cv
+import cv2
+import numpy as np
 
 share_queue = Queue.Queue()
 
@@ -53,15 +56,27 @@ class DummyAccApp(AppProxyThread):
         global share_queue
         self.data_queue = share_queue
         self.result_queue = Queue.Queue()
-        try:
-            while 1:
-                if self.data_queue.empty() == False:
-                    image_data = self.data_queue.get()
-                    sys.stdout.write("get image!!!!!!!!!!")
-                    time.sleep(0.001)
-            return 
-        except:
-            sys.stdout.write("Exception in DummyAccApp!")
+        i = 0
+        while 1:
+            if self.data_queue.empty() == False:
+                image_data = self.data_queue.get()
+                imagere = Image.open(io.BytesIO(image_data))
+                #imagere.show()
+                #ci = cv.CreateImageHeader(imagere.size, cv.IPL_DEPTH_8U, 3)
+                #data = imagere.tostring()
+                #cv.SetData(ci, data, imagere.size[0]*3)
+                #cv.CvtColor(ci, ci, cv.CV_RGB2BGR)
+                sys.stdout.write("%s" % i)
+                i = i + 1
+                open_cv_image = np.array(imagere)
+                cv2.imshow("123", open_cv_image)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                #result_img = cv.CreateMat(960,1280,cv.CV_8U)
+
+                #cv.Copy(image_data,result_img)
+                time.sleep(0.001)
+        return 
 
 
 if __name__ == "__main__":
@@ -84,13 +99,6 @@ if __name__ == "__main__":
     dummy_video_app.start()
     dummy_video_app.isDaemon = True
 
-    # dummy acc app
-    #acc_client = None
-    #acc_app = None
-    #acc_queue = Queue.Queue(1)
-    #acc_client = AppProxyStreamingClient((acc_ip, acc_port), acc_queue)
-    #acc_client.start()
-    #acc_client.isDaemon = True
     acc_app = DummyAccApp(video_frame_queue, result_queue)
     acc_app.start()
     acc_app.isDaemon = True
@@ -112,8 +120,6 @@ if __name__ == "__main__":
             video_client.terminate()
         if dummy_video_app is not None:
             dummy_video_app.terminate()
-        if acc_client is not None:
-            acc_client.terminate()
         if acc_app is not None:
             acc_app.terminate()
         result_pub.terminate()
