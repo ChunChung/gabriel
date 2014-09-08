@@ -61,15 +61,31 @@ class DummyAccApp(AppProxyThread):
             if self.data_queue.empty() == False:
                 image_data = self.data_queue.get()
                 imagere = Image.open(io.BytesIO(image_data))
-                #imagere.show()
-                #ci = cv.CreateImageHeader(imagere.size, cv.IPL_DEPTH_8U, 3)
-                #data = imagere.tostring()
-                #cv.SetData(ci, data, imagere.size[0]*3)
-                #cv.CvtColor(ci, ci, cv.CV_RGB2BGR)
-                sys.stdout.write("%s" % i)
-                i = i + 1
-                open_cv_image = np.array(imagere)
-                cv2.imshow("123", open_cv_image)
+                frame = np.array(imagere)
+
+                tmp_img = np.array(frame)
+                hsv = cv2.cvtColor(tmp_img, cv2.COLOR_BGR2HSV)
+                
+                # define range of blue color in HSV
+                lower_blue = np.array([110,50,50], dtype=np.uint8)
+                upper_blue = np.array([130,255,255], dtype=np.uint8)
+                
+                # Threshold the HSV image to get only blue colors
+                mask = cv2.inRange(hsv, lower_blue, upper_blue)
+                
+                kernel = np.ones((5,5),np.uint8)
+                mask = cv2.erode (mask,kernel,iterations = 1)
+                mask = cv2.dilate(mask,kernel,iterations = 1)
+                mask = cv2.dilate(mask,kernel,iterations = 1)
+                mask = cv2.erode (mask,kernel,iterations = 1)
+                
+                # Bitwise-AND mask and original image
+                res = cv2.bitwise_and(frame,frame, mask= mask)
+                
+                cv2.imshow('frame', frame )
+                cv2.imshow('mask',mask)
+                cv2.imshow('res',res)
+
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
                 #result_img = cv.CreateMat(960,1280,cv.CV_8U)
