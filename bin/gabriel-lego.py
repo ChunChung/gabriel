@@ -40,59 +40,53 @@ import cv
 import cv2
 import numpy as np
 
-share_queue = Queue.Queue()
 
 class DummyVideoApp(AppProxyThread):
+    #def __init__(self, video_frame_queue, result_queue):
+        #cv2.namedWindow('frame')
+        #cv2.namedWindow('mask')
+        #cv2.namedWindow('res')
+        #AppProxyThread.__init__(self, video_frame_queue, result_queue)
 
     def handle(self, header, data):
-        global share_queue
-        share_queue.put_nowait(data)
-        result = ""
-        return result
+        print "start:" + str(time.time())
+        imagere = Image.open(io.BytesIO(data))
+        frame = np.array(imagere)
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
+        tmp_img = np.array(frame)
+        hsv = cv2.cvtColor(tmp_img, cv2.COLOR_BGR2HSV)
 
-class DummyAccApp(AppProxyThread):
-    def handle(self, header, acc_data):
-        global share_queue
-        self.data_queue = share_queue
-        self.result_queue = Queue.Queue()
-        i = 0
-        while 1:
-            if self.data_queue.empty() == False:
-                image_data = self.data_queue.get()
-                imagere = Image.open(io.BytesIO(image_data))
-                frame = np.array(imagere)
+        print "mid1:" + str(time.time())
+        # define range of blue color in HSV
+        lower_blue = np.array([110,50,50], dtype=np.uint8)
+        upper_blue = np.array([130,255,255], dtype=np.uint8)
 
-                tmp_img = np.array(frame)
-                hsv = cv2.cvtColor(tmp_img, cv2.COLOR_BGR2HSV)
-                
-                # define range of blue color in HSV
-                lower_blue = np.array([110,50,50], dtype=np.uint8)
-                upper_blue = np.array([130,255,255], dtype=np.uint8)
-                
-                # Threshold the HSV image to get only blue colors
-                mask = cv2.inRange(hsv, lower_blue, upper_blue)
-                
-                kernel = np.ones((5,5),np.uint8)
-                mask = cv2.erode (mask,kernel,iterations = 1)
-                mask = cv2.dilate(mask,kernel,iterations = 1)
-                mask = cv2.dilate(mask,kernel,iterations = 1)
-                mask = cv2.erode (mask,kernel,iterations = 1)
-                
-                # Bitwise-AND mask and original image
-                res = cv2.bitwise_and(frame,frame, mask= mask)
-                
-                cv2.imshow('frame', frame )
-                cv2.imshow('mask',mask)
-                cv2.imshow('res',res)
+        # Threshold the HSV image to get only blue colors
+        mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-                #result_img = cv.CreateMat(960,1280,cv.CV_8U)
+        kernel = np.ones((5,5),np.uint8)
+        mask = cv2.erode (mask,kernel,iterations = 1)
+        mask = cv2.dilate(mask,kernel,iterations = 1)
+        mask = cv2.dilate(mask,kernel,iterations = 1)
+        mask = cv2.erode (mask,kernel,iterations = 1)
 
-                #cv.Copy(image_data,result_img)
-                time.sleep(0.001)
-        return 
+        # Bitwise-AND mask and original image
+        res = cv2.bitwise_and(frame,frame, mask= mask)
+        print "end:" + str(time.time())
+
+        cv2.imshow('frame', frame)
+        cv2.waitKey(1)
+        cv2.imshow('mask',mask)
+        cv2.waitKey(1)
+        cv2.imshow('res',res)
+        cv2.waitKey(1)
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+        #    pass
+        #result_img = cv.CreateMat(960,1280,cv.CV_8U)
+
+        #cv.Copy(image_data,result_img)
+        return "some message"
 
 
 if __name__ == "__main__":
@@ -115,9 +109,9 @@ if __name__ == "__main__":
     dummy_video_app.start()
     dummy_video_app.isDaemon = True
 
-    acc_app = DummyAccApp(video_frame_queue, result_queue)
-    acc_app.start()
-    acc_app.isDaemon = True
+    #acc_app = DummyAccApp(video_frame_queue, result_queue)
+    #acc_app.start()
+    #acc_app.isDaemon = True
 
     # result pub/sub
     result_pub = ResultpublishClient(return_addresses, result_queue)
@@ -136,7 +130,7 @@ if __name__ == "__main__":
             video_client.terminate()
         if dummy_video_app is not None:
             dummy_video_app.terminate()
-        if acc_app is not None:
-            acc_app.terminate()
+        #if acc_app is not None:
+        #    acc_app.terminate()
         result_pub.terminate()
 
