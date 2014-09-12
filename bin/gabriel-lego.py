@@ -42,11 +42,8 @@ import numpy as np
 
 
 class DummyVideoApp(AppProxyThread):
-    #def __init__(self, video_frame_queue, result_queue):
-        #cv2.namedWindow('frame')
-        #cv2.namedWindow('mask')
-        #cv2.namedWindow('res')
-        #AppProxyThread.__init__(self, video_frame_queue, result_queue)
+    def __init__(self, video_frame_queue, result_queue):
+        AppProxyThread.__init__(self, video_frame_queue, result_queue)
 
     def handle(self, header, data):
         print "start:" + str(time.time())
@@ -75,11 +72,13 @@ class DummyVideoApp(AppProxyThread):
         res = cv2.bitwise_and(frame,frame, mask= mask)
         print "end:" + str(time.time())
 
+
+        frame = cv2.resize(frame, (320,240))
         cv2.imshow('frame', frame)
-        cv2.waitKey(1)
-        cv2.imshow('mask',mask)
-        cv2.waitKey(1)
-        cv2.imshow('res',res)
+        #cv2.waitKey(1)
+        #cv2.imshow('mask',mask)
+        #cv2.waitKey(1)
+        #cv2.imshow('res',res)
         cv2.waitKey(1)
         #if cv2.waitKey(1) & 0xFF == ord('q'):
         #    pass
