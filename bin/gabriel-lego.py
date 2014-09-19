@@ -39,22 +39,24 @@ import io
 import cv
 import cv2
 import numpy as np
-
+import perspectiveTransform
 
 class DummyVideoApp(AppProxyThread):
     def __init__(self, video_frame_queue, result_queue):
         AppProxyThread.__init__(self, video_frame_queue, result_queue)
 
     def handle(self, header, data):
-        print "start:" + str(time.time())
+        #print "start:" + str(time.time())
         imagere = Image.open(io.BytesIO(data))
-        frame = np.array(imagere)
+        e1 = cv2.getTickCount()
+
+ 	frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         tmp_img = np.array(frame)
         hsv = cv2.cvtColor(tmp_img, cv2.COLOR_BGR2HSV)
 
-        print "mid1:" + str(time.time())
+        #print "mid1:" + str(time.time())
         # define range of blue color in HSV
         lower_blue = np.array([110,50,50], dtype=np.uint8)
         upper_blue = np.array([130,255,255], dtype=np.uint8)
@@ -70,22 +72,34 @@ class DummyVideoApp(AppProxyThread):
 
         # Bitwise-AND mask and original image
         res = cv2.bitwise_and(frame,frame, mask= mask)
-        print "end:" + str(time.time())
+        #print "end:" + str(time.time())
 
 
         frame = cv2.resize(frame, (320,240))
         cv2.imshow('frame', frame)
         #cv2.waitKey(1)
-        #cv2.imshow('mask',mask)
+        cv2.imshow('mask',mask)
         #cv2.waitKey(1)
-        #cv2.imshow('res',res)
+        cv2.imshow('res',res)
         cv2.waitKey(1)
         #if cv2.waitKey(1) & 0xFF == ord('q'):
         #    pass
         #result_img = cv.CreateMat(960,1280,cv.CV_8U)
 
         #cv.Copy(image_data,result_img)
-        return "some message"
+        
+	lego_img = perspectiveTransform.perspective_transform(frame, mask)
+	
+	if lego_img is not None:
+	    pass
+	    #TODO: detect bricks
+
+	#Performance Measurement 	
+	e2 = cv2.getTickCount()
+	time = (e2 - e1)/ cv2.getTickFrequency()
+	print 'processing time: ', time
+
+	return "some message"
 
 
 if __name__ == "__main__":
