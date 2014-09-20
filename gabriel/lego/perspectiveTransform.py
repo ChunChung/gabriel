@@ -80,7 +80,8 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         dst = cv2.warpPerspective(img,M,(320,320))
         #if lego_config.DEBUG == 1:
         #    debug.imshow('perspective', dst)
-        cv2.imshow('perspective', dst)
+	cv2.imshow('perspective', dst)
+	cv2.waitkey(1)
 	return dst
     
     

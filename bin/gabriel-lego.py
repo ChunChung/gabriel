@@ -33,6 +33,7 @@ from gabriel.proxy.common import AppProxyThread
 from gabriel.proxy.common import ResultpublishClient
 from gabriel.proxy.common import get_service_list
 from gabriel.common.config import ServiceMeta as SERVICE_META
+from gabriel.lego import perspectiveTransform
 
 import Image
 import io
