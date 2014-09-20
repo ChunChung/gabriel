@@ -2,18 +2,19 @@ import sys
 import cv2
 import numpy as np
 
-#from gabriel.lego import debug
+import config
+import debug
 
 def perspective_transform(img, plate_mask): #return perspective transform version of img
                                             #img: original image
                                             #plate_mask : plate mask image
-    
+    print sys.modules[__name__], 'in perspective'    
     # find plate's coners by using plate's mask
     rows,cols = plate_mask.shape
     
     #Input image should be a binary image, so apply threshold or use canny edge detection before finding applying hough transform
     edges = cv2.Canny(plate_mask, 50, 150, apertureSize = 3)
-    
+    print "after Canny"
     #In experiments the probabilistic Hough transform yields less line segments but with higher accuracy than the standard Hough transform.
     #threshold :  Accumulator threshold parameter. Only those lines are returned that get enough votes.
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
@@ -24,8 +25,8 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         minLineLength = perimeter, maxLineGap = perimeter / 20)
     if lines is None:    
 	print sys.modules[__name__], 'Cannot find lines'
-    return None
-    
+    	return None
+    print "find lines!"    
     #extend lines
     for line in lines:
         v = line
@@ -33,12 +34,12 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         line[1] = (float(v[1]) - v[3]) / (v[0] - v[2]) * -v[0] + v[1]
         line[2] = cols
         line[3] = (float(v[1]) - v[3]) / (v[0] - v[2]) * (cols - v[2]) + v[3]
-        if lego_config.DEBUG == 1:
+        if config.DEBUG == 1:
             cv2.line(edges,(line[0],line[1]),(line[2],line[3]),(0,0,255),2)
     
-    #if lego_config.DEBUG == 1:
-    #    debug.imshow('edges', edges)
-    cv2.imshow('edges',edges)    
+    if config.DEBUG == 1:
+        debug.imshow('edges', edges)
+   
     #find intersections between lines
     corners = []
     for index, line1 in lines:
@@ -50,7 +51,6 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     
     #Check if the approximate polygonal curve has 4 vertices
     approx = cv2.approxPolyDP(corners, cv2.arcLength(corners,True) * 0.02, True)
-    
     
     if len(approx) != 4:
         print sys.modules[__name__], "Cannot find a square."     
@@ -72,16 +72,14 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         ur = list(ur)
         bl = list(bl)
         br = list(br)
-        
+        print ul, ur, bl, br 
         #perspective transformation
         dst_corners = np.float32([[0,0],[320,0],[0,320],[320,320]])
         M = cv2.getPerspectiveTransform(src_corners,dst_corners)
         #TODO: find size from dst_corners   
         dst = cv2.warpPerspective(img,M,(320,320))
-        #if lego_config.DEBUG == 1:
-        #    debug.imshow('perspective', dst)
-	cv2.imshow('perspective', dst)
-	cv2.waitkey(1)
+        if config.DEBUG == 1:
+            debug.imshow('perspective', dst)
 	return dst
     
     
