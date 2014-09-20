@@ -40,7 +40,6 @@ import io
 import cv
 import cv2
 import numpy as np
-import perspectiveTransform
 
 class DummyVideoApp(AppProxyThread):
     def __init__(self, video_frame_queue, result_queue):
