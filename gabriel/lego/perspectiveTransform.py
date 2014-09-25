@@ -20,17 +20,29 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     ret,thresh = cv2.threshold(plate_mask,127,255,0)
     contours,hierarchy = cv2.findContours(thresh, 1, 2)
     #consider only the contour with large area, more likely to be the plate
-    #valid_contours = sorted(contours, key = cv2.contourArea, reverse = True)[:1]
-    large_contours = list()
-    for cnt in contours:
-        if cv2.contourArea(cnt) > rows*cols / 8:
-            large_contours.append(cnt)
+    large_contours = sorted(contours, key = cv2.contourArea, reverse = True)[:1]
+    #large_contours = list()
+    #largest_cnt = None
+    #max_area = 0
+    #for cnt in contours:
+    #    if area = cv2.contourArea(cnt) > rows*cols / 8 and area > max_area:
+    #    largest_cnt = cnt
+    #    max_area = area
+    
+    #if largest_cnt is None: 
+    #    print 'Abort: cannot find large enough contours'
+    #    return None
+    
+    #large_contours.append(largest_cnt)
     
     #create an empty image 
     edges = np.empty((rows, cols), dtype=np.uint8)
     edges[:, :] = 0
 
     for cnt in large_contours:
+        #ignore contours that is not large enough
+        if cv2.contourArea(cnt) < rows*cols / 8 : 
+            continue
         #hull = cv2.convexHull(cnt)
         #check if the contour is square, exclude hand occlusion as well
         epsilon = 0.05 * cv2.arcLength(cnt,True)
@@ -47,7 +59,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
     #maxLineGap : Maximum allowed gap between points on the same line to link them.
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/4,
-        minLineLength = cols/4, maxLineGap = 5)
+        minLineLength = cols/4, maxLineGap = 10)
     if lines is None:    
 	print 'Abort: cannot find lines'
     	return None
@@ -118,7 +130,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #perspective transformation
 	src_corners = np.float32([ul, ur, bl, br])
         dst_corners = np.float32([[0,0],[320,0],[0,320],[320,320]])
-        print 'perspective transform: \n', src_corners, ' --> ', dst_corners
+        print 'processing perspective transform...'
         M = cv2.getPerspectiveTransform(src_corners,dst_corners)
         #TODO: find size from dst_corners   
         dst = cv2.warpPerspective(img,M,(320,320))
