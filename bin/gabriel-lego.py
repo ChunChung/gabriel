@@ -58,7 +58,7 @@ class DummyVideoApp(AppProxyThread):
 
         #print "mid1:" + str(time.time())
         # define range of blue color in HSV
-        lower_blue = np.array([100,50,50], dtype=np.uint8)
+        lower_blue = np.array([90,0,50], dtype=np.uint8)
         upper_blue = np.array([140,255,255], dtype=np.uint8)
 
         # Threshold the HSV image to get only blue colors
