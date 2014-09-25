@@ -15,21 +15,39 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     print 'mask size: ', cols, 'x', rows    
     #Input image should be a binary image, so apply threshold or use canny edge detection before finding applying hough transform
     #edges = cv2.Canny(plate_mask, 100, 120, apertureSize = 3)
-    #ret,thresh = cv2.threshold(img,127,255,0)
-    contours,hierarchy = cv2.findContours(plate_mask, 1, 2)
+    
+    #find contours
+    ret,thresh = cv2.threshold(plate_mask,127,255,0)
+    contours,hierarchy = cv2.findContours(thresh, 1, 2)
+    #consider only the contour with large area, more likely to be the plate
+    #valid_contours = sorted(contours, key = cv2.contourArea, reverse = True)[:1]
+    large_contours = list()
+    for cnt in contours:
+        if cv2.contourArea(cnt) > rows*cols / 8:
+            large_contours.append(cnt)
+    
+    #create an empty image 
     edges = np.empty((rows, cols), dtype=np.uint8)
     edges[:, :] = 0
-    for cnt in contours:
-        hull = cv2.convexHull(cnt)
-        cv2.drawContours(edges, [hull], 0, (255), 1)
+
+    for cnt in large_contours:
+        #hull = cv2.convexHull(cnt)
+        #check if the contour is square, exclude hand occlusion as well
+        epsilon = 0.05 * cv2.arcLength(cnt,True)
+        approx = cv2.approxPolyDP(cnt,epsilon,True)
+        if len(approx) == 4:
+            #bulged out the contour, make it smoother
+            hull = cv2.convexHull(cnt) 
+            cv2.drawContours(edges, [hull], 0, (255), 1)
+            #cv2.drawContours(edges, [cnt], 0, (255), 1)
     if config.DEBUG == 1:
-        debug.imshow('convex hull', edges)
+        debug.imshow('PT: convex hull', edges)
     #In experiments the probabilistic Hough transform yields less line segments but with higher accuracy than the standard Hough transform.
     #threshold :  Accumulator threshold parameter. Only those lines are returned that get enough votes.
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
     #maxLineGap : Maximum allowed gap between points on the same line to link them.
     lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/4,
-        minLineLength = cols/4, maxLineGap = 10)
+        minLineLength = cols/4, maxLineGap = 5)
     if lines is None:    
 	print 'Abort: cannot find lines'
     	return None
@@ -55,11 +73,12 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
 	    return None
 
     #find intersections between lines
+    INVALID_CORNER_REGION = 5
     corners = []
     for i in range(0, len(lines)):
         for j in range(i+1,len(lines)):
             (x, y) = compute_interset(lines[i], lines[j])
-            if x >= 0 and x < cols and y >= 0 and y < rows:
+            if x >= INVALID_CORNER_REGION and x < cols-INVALID_CORNER_REGION and y >= INVALID_CORNER_REGION and y < rows-INVALID_CORNER_REGION:
                 corners.append((int(x), int(y)))
     
     if len(corners) == 0:
@@ -79,7 +98,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
                 cv2.line(edges,(line[0],line[1]),(line[2],line[3]),255,3)
 	    for corner in corners:
 	        cv2.circle(edges, corner, 10, 255, -1)
-            debug.imshow('four corners', edges)
+            debug.imshow('PT: four corners', edges)
         #Determine top-left, bottom-left, top-right, and bottom-right corner
         dtype = [('x', float), ('y', float)]
         corners = np.array(corners, dtype = dtype)
@@ -104,7 +123,9 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #TODO: find size from dst_corners   
         dst = cv2.warpPerspective(img,M,(320,320))
         if config.DEBUG == 1:
-            debug.imshow('perspective', dst)
+            debug.imshow('PT: original image', img) 
+            debug.imshow('PT: plate mask', plate_mask)
+            debug.imshow('PT: transformed', dst)
 	return dst
     
     
