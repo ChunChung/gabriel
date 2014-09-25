@@ -141,3 +141,6 @@ def line_interset(a, b):
 
 def euc_dist(pt1,pt2):
     return math.sqrt((pt2[0]-pt1[0])*(pt2[0]-pt1[0])+(pt2[1]-pt1[1])*(pt2[1]-pt1[1]))
+
+def write_img(img, filename):
+    cv2.imwrite(filename, img)
