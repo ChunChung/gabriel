@@ -4,6 +4,7 @@ import numpy as np
 
 import config
 import debug
+from tool import euc_dist
 
 def perspective_transform(img, plate_mask): #return perspective transform version of img
                                             #img: original image
@@ -13,9 +14,16 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     rows,cols = plate_mask.shape
     print 'mask size: ', cols, 'x', rows    
     #Input image should be a binary image, so apply threshold or use canny edge detection before finding applying hough transform
-    edges = cv2.Canny(plate_mask, 100, 120, apertureSize = 3)
+    #edges = cv2.Canny(plate_mask, 100, 120, apertureSize = 3)
+    #ret,thresh = cv2.threshold(img,127,255,0)
+    contours,hierarchy = cv2.findContours(plate_mask, 1, 2)
+    edges = np.empty((rows, cols), dtype=np.uint8)
+    edges[:, :] = 0
+    for cnt in contours:
+        hull = cv2.convexHull(cnt)
+        cv2.drawContours(edges, [hull], 0, (255), 1)
     if config.DEBUG == 1:
-        debug.imshow('Canny edges', edges)
+        debug.imshow('convex hull', edges)
     #In experiments the probabilistic Hough transform yields less line segments but with higher accuracy than the standard Hough transform.
     #threshold :  Accumulator threshold parameter. Only those lines are returned that get enough votes.
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
@@ -27,21 +35,25 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     	return None
     else:
 	lines = lines[0]
-	print 'find ', len(lines), ' lines'
-	if len(lines) < 4:
-            print 'Abort: less than 4 lines'
+	
+        # get four major lines
+        new_lines = list()
+        for line in lines:
+            flag = True
+            for new_line in new_lines:
+                if is_line_seg_close(line, new_line):
+                    flag = False
+                    break
+            if flag:
+                new_lines.append(list(line))
+        
+        lines = new_lines
+
+        print 'find ', len(lines), ' lines'
+	if len(lines) != 4:
+            print 'Abort: cannot find exactly 4 lines'
 	    return None
 
-    #extend lines
-   # for line in lines:
-   #     v = line
-   #     line[0] = 0
-   #     line[1] = (float(v[1]) - v[3]) / (v[0] - v[2]) * -v[0] + v[1]
-   #     line[2] = cols
-   #     line[3] = (float(v[1]) - v[3]) / (v[0] - v[2]) * (cols - v[2]) + v[3]
-   #     if config.DEBUG == 1:
-   #         cv2.line(edges,(line[0],line[1]),(line[2],line[3]),255,3)
-    
     #find intersections between lines
     corners = []
     for i in range(0, len(lines)):
@@ -96,7 +108,22 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
 	return dst
     
     
-    
+def is_line_seg_close(line1, line2):
+    pt1_1 = np.array(line1[0 : 2])
+    pt1_2 = np.array(line1[2 : 4])
+    pt2_1 = np.array(line2[0 : 2])
+    pt2_2 = np.array(line2[2 : 4])
+    l1 = euc_dist(pt1_1, pt1_2)
+    l2 = euc_dist(pt2_1, pt2_2)
+    v1 = pt1_2 - pt1_1
+    v2 = pt2_1 - pt1_1
+    v3 = pt2_2 - pt1_1
+    area1 = np.absolute(np.cross(v1, v2))
+    area2 = np.absolute(np.cross(v1, v3))
+    if max(area1, area2) < l1 * l2 / 3:
+        return True
+    else:
+        return False    
     
 
 def compute_interset(a, b):
