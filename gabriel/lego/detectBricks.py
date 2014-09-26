@@ -10,7 +10,7 @@ import config
 if os.path.isdir("../gabriel") is True:
     sys.path.insert(0, "..")
 
-def detectBricks(img, color_type):
+def main(img):
     if config.DEBUG:
         e1 = cv2.getTickCount()
     orig_img = img
@@ -20,7 +20,7 @@ def detectBricks(img, color_type):
     resize_img = cv2.resize(img, dsize=(32,32), interpolation=cv2.INTER_CUBIC)
     resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
 
-    detectColors(resize_img)
+    res_img = detectBricks(resize_img)
 
     if config.DEBUG:
         e2 = cv2.getTickCount()
@@ -28,33 +28,47 @@ def detectBricks(img, color_type):
         print 'procesmath.sing time: ', time
     cv2.imshow('orig', orig_img)
     cv2.imshow('32_32_orig', resize_img)
+    cv2.imshow('32_32_after', res_img)
     cv2.waitKey(0)
 
 
-def detectColors(img):
+def detectBricks(img):
     # COLORS -> 0: BLACK, 1: WHITE, 2:BROWN
+    colors_num = len(config.COLORS)
+    rows, cols, channels = img.shape
+    panel = np.empty((rows,cols,colors_num))
 
-    for color in config.COLORS:
-        panel = np.empty((32,32))
+    res_img = np.empty((32,32,3), dtype=np.uint8)
+    for colors_idx in range(colors_num):
+        color = config.COLORS[colors_idx]
 
         if config.DEBUG:
             print "detect color:", color
 
         img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
         color_lab = cv2.cvtColor(color, cv2.COLOR_BGR2LAB)
         
-
-        comp = np.empty((32,32,3), dtype=np.uint8)
-        comp[:, :] = color_lab
-        dst = (img_lab - comp) 
-
-        rows, cols, channels = img.shape
-
         for i in range(0,rows):
             for j in range(0,cols):
-                print int(delta_e_cie2000(comp[i][j], img_lab[i][j])),
+                panel[i][j][colors_idx] = int(delta_e_cie2000(color_lab[0][0], img_lab[i][j]))
+
+    for i in range(0,rows):
+        for j in range(0,cols):
+            panel_idx = panel[i][j].argmin()
+            if panel[i][j][panel_idx] <= config.COLORS_BOUND[panel_idx]:
+                res_img[i][j] = config.COLORS[panel_idx]
+            else:
+                res_img[i][j] = config.COLOR_BLUE
+
+    if config.DEBUG:
+        print "color difference====="
+        for i in range(0,rows):
+            for j in range(0,cols):
+                panel_idx = panel[i][j].argmin()
+                print str(int(panel[i][j][panel_idx])).zfill(2),
             print ""
+    return res_img
+
 
 def delta_e_cie2000(color1, color2, Kl=1, Kc=1, Kh=1):
     """
@@ -125,7 +139,6 @@ def delta_e_cie2000(color1, color2, Kl=1, Kc=1, Kh=1):
   
     
 
-
-if config.DEBUG:
+if __name__ == "__main__":
     img = cv2.imread('result.jpg')
-    detectBricks(img,1)
+    main(img)
