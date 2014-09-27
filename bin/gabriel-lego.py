@@ -35,6 +35,7 @@ from gabriel.proxy.common import get_service_list
 from gabriel.common.config import ServiceMeta as SERVICE_META
 from gabriel.lego import perspectiveTransform
 from gabriel.lego import detectBricks
+from gabriel.lego import debug
 
 import Image
 import io
@@ -59,8 +60,8 @@ class DummyVideoApp(AppProxyThread):
 
         #print "mid1:" + str(time.time())
         # define range of blue color in HSV
-        lower_blue = np.array([90,0,50], dtype=np.uint8)
-        upper_blue = np.array([140,255,255], dtype=np.uint8)
+        lower_blue = np.array([100,50,50], dtype=np.uint8)
+        upper_blue = np.array([130,255,255], dtype=np.uint8)
 
         # Threshold the HSV image to get only blue colors
         mask = cv2.inRange(hsv, lower_blue, upper_blue)
@@ -76,12 +77,11 @@ class DummyVideoApp(AppProxyThread):
         #print "end:" + str(time.time())
 
 
-        frame = cv2.resize(frame, (320,240))
-        cv2.imshow('frame', frame)
+        debug.imshow('frame', frame)
         #cv2.waitKey(1)
-        cv2.imshow('mask',mask)
+        debug.imshow('mask', mask)
         #cv2.waitKey(1)
-        cv2.imshow('res',res)
+        debug.imshow('res', res)
         #if cv2.waitKey(1) & 0xFF == ord('q'):
         #    pass
         #result_img = cv.CreateMat(960,1280,cv.CV_8U)
