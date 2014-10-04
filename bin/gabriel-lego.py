@@ -34,7 +34,7 @@ from gabriel.proxy.common import ResultpublishClient
 from gabriel.proxy.common import get_service_list
 from gabriel.common.config import ServiceMeta as SERVICE_META
 from gabriel.lego import perspectiveTransform
-from gabriel.lego import detectBricks
+from gabriel.lego import bricksDetector
 from gabriel.lego import debug
 
 import Image
@@ -92,7 +92,7 @@ class DummyVideoApp(AppProxyThread):
 
         if lego_img is not None:
             #TODO: detect bricks
-            DB = detectBricks.main(lego_img)
+            DB = bricksDetector.main(lego_img)
             cv2.imshow('DB')
 
         cv2.waitKey(1)
