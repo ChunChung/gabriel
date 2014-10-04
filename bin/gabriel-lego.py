@@ -36,6 +36,7 @@ from gabriel.common.config import ServiceMeta as SERVICE_META
 from gabriel.lego import perspectiveTransform
 from gabriel.lego import bricksDetector
 from gabriel.lego import debug
+from gabriel.lego import plateMaskDetector
 
 import Image
 import io
@@ -55,38 +56,15 @@ class DummyVideoApp(AppProxyThread):
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        tmp_img = np.array(frame)
-        hsv = cv2.cvtColor(tmp_img, cv2.COLOR_BGR2HSV)
-
-        #print "mid1:" + str(time.time())
-        # define range of blue color in HSV
-        lower_blue = np.array([100,50,50], dtype=np.uint8)
-        upper_blue = np.array([130,255,255], dtype=np.uint8)
-
-        # Threshold the HSV image to get only blue colors
-        mask = cv2.inRange(hsv, lower_blue, upper_blue)
-
-        kernel = np.ones((5,5),np.uint8)
-        mask = cv2.erode (mask,kernel,iterations = 1)
-        mask = cv2.dilate(mask,kernel,iterations = 1)
-        mask = cv2.dilate(mask,kernel,iterations = 1)
-        mask = cv2.erode (mask,kernel,iterations = 1)
+        mask = plateMaskDetector.main(frame)
 
         # Bitwise-AND mask and original image
         res = cv2.bitwise_and(frame,frame, mask= mask)
-        #print "end:" + str(time.time())
 
 
         debug.imshow('frame', frame)
-        #cv2.waitKey(1)
         debug.imshow('mask', mask)
-        #cv2.waitKey(1)
         debug.imshow('res', res)
-        #if cv2.waitKey(1) & 0xFF == ord('q'):
-        #    pass
-        #result_img = cv.CreateMat(960,1280,cv.CV_8U)
-
-        #cv.Copy(image_data,result_img)
 
         lego_img = perspectiveTransform.perspective_transform(frame, mask)
 
