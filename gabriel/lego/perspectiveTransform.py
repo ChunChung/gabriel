@@ -58,7 +58,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     #threshold :  Accumulator threshold parameter. Only those lines are returned that get enough votes.
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
     #maxLineGap : Maximum allowed gap between points on the same line to link them.
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/4,
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/8,
         minLineLength = cols/4, maxLineGap = 10)
     if lines is None:    
 	print 'Abort: cannot find lines'
