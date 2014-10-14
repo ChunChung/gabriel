@@ -155,8 +155,8 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #TODO: find size from dst_corners   
         dst = cv2.warpPerspective(img,M,(320,320))
         if config.DEBUG == 1:
-            debug.imshow('PT: original image', img) 
-            debug.imshow('PT: plate mask', plate_mask)
+        #    debug.imshow('PT: original image', img) 
+        #    debug.imshow('PT: plate mask', plate_mask)
             debug.imshow('PT: transformed', dst)
 	return dst
     
