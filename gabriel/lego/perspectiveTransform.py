@@ -47,10 +47,10 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #check if the contour is square, exclude hand occlusion as well
         epsilon = 0.05 * cv2.arcLength(cnt,True)
         approx = cv2.approxPolyDP(cnt,epsilon,True)
-        #if len(approx) == 4:
+        if len(approx) == 4:
             #bulged out the contour, make it smoother
-        hull = cv2.convexHull(cnt) 
-        cv2.drawContours(edges, [hull], 0, (255), 1)
+            hull = cv2.convexHull(cnt) 
+            cv2.drawContours(edges, [hull], 0, (255), 1)
             #cv2.drawContours(edges, [cnt], 0, (255), 1)
     if config.DEBUG == 1:
         debug.imshow('PT: convex hull', edges)
