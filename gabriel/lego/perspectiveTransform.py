@@ -14,10 +14,10 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     rows,cols = plate_mask.shape
     print 'mask size: ', cols, 'x', rows    
     #Input image should be a binary image, so apply threshold or use canny edge detection before finding applying hough transform
-    edges = cv2.Canny(plate_mask, 100, 120, apertureSize = 3)
+    #edges = cv2.Canny(plate_mask, 100, 120, apertureSize = 3)
     
     #find contours
-    ret,thresh = cv2.threshold(edges,127,255,0)
+    ret,thresh = cv2.threshold(plate_mask,127,255,0)
     contours,hierarchy = cv2.findContours(thresh, 1, 2)
     #consider only the contour with large area, more likely to be the plate
     large_contours = sorted(contours, key = cv2.contourArea, reverse = True)[:1]
@@ -47,10 +47,10 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #check if the contour is square, exclude hand occlusion as well
         epsilon = 0.05 * cv2.arcLength(cnt,True)
         approx = cv2.approxPolyDP(cnt,epsilon,True)
-        if len(approx) == 4:
+        #if len(approx) == 4:
             #bulged out the contour, make it smoother
-            hull = cv2.convexHull(cnt) 
-            cv2.drawContours(edges, [hull], 0, (255), 1)
+        hull = cv2.convexHull(cnt) 
+        cv2.drawContours(edges, [hull], 0, (255), 1)
             #cv2.drawContours(edges, [cnt], 0, (255), 1)
     if config.DEBUG == 1:
         debug.imshow('PT: convex hull', edges)
