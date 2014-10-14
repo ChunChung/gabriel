@@ -6,10 +6,30 @@ import config
 import debug
 from tool import euc_dist
 
+def nothing(x):
+    pass
+
 def perspective_transform(img, plate_mask): #return perspective transform version of img
                                             #img: original image
                                             #plate_mask : plate mask image    
     print '----- start ', sys.modules[__name__], '-----'
+    
+
+    arc_len_w = 5
+    hough_th_w = 4
+    hough_min_len_w = 8
+    hough_max_gap = 10
+    if config.DEBUG == 1:
+    	cv2.namedWindow('PT: convex hull')
+    	cv2.createTrackbar('arc_len_w','PT: convex hull', arc_len_w, 100, nothing)
+    	cv2.createTrackbar('hough_th_w','PT: convex hull', hough_th_w, 10, nothing)
+    	cv2.createTrackbar('hough_min_len_w','PT: convex hull', hough_min_len_w, 10, nothing)
+    	cv2.createTrackbar('hough_max_gap','PT: convex hull', hough_max_gap, 20, nothing)
+    	arc_len_w = cv2.getTrackbarPos('arc_len_w','PT: convex hull')
+    	hough_th_w = cv2.getTrackbarPos('hough_th_w','PT: convex hull')
+    	hough_min_len_w = cv2.getTrackbarPos('hough_min_len_w','PT: convex hull')
+    	hough_max_gap = cv2.getTrackbarPos('hough_max_gap','PT: convex hull')
+
     # find plate's coners by using plate's mask
     rows,cols = plate_mask.shape
     print 'mask size: ', cols, 'x', rows    
@@ -45,7 +65,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
             continue
         #hull = cv2.convexHull(cnt)
         #check if the contour is square, exclude hand occlusion as well
-        epsilon = 0.05 * cv2.arcLength(cnt,True)
+        epsilon = 0.01 * arc_len_w * cv2.arcLength(cnt,True)
         approx = cv2.approxPolyDP(cnt,epsilon,True)
         if len(approx) == 4:
             #bulged out the contour, make it smoother
@@ -58,8 +78,8 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     #threshold :  Accumulator threshold parameter. Only those lines are returned that get enough votes.
     #minLineLength : Minimum line length. Line segments shorter than that are rejected.
     #maxLineGap : Maximum allowed gap between points on the same line to link them.
-    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/8,
-        minLineLength = cols/4, maxLineGap = 10)
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold = cols/hough_th_w,
+        minLineLength = cols/hough_min_len_w, maxLineGap = hough_max_gap)
     if lines is None:    
 	print 'Abort: cannot find lines'
     	return None
