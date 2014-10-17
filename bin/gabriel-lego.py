@@ -37,6 +37,8 @@ from gabriel.lego import perspectiveTransform
 from gabriel.lego import bricksDetector
 from gabriel.lego import debug
 from gabriel.lego import plateMaskDetector
+from gabriel.lego import config
+from gabriel.lego import mosaicHandler
 
 import Image
 import io
@@ -46,32 +48,81 @@ import numpy as np
 
 class DummyVideoApp(AppProxyThread):
     def __init__(self, video_frame_queue, result_queue):
+        if os.path.isfile(config.MOSAIC_NAME):
+            os.remove(config.MOSAIC_NAME)
+            print "Reset " + config.MOSAIC_NAME + " file"
         AppProxyThread.__init__(self, video_frame_queue, result_queue)
+
+
 
     def handle(self, header, data):
         #print "start:" + str(time.time())
         imagere = Image.open(io.BytesIO(data))
-        e1 = cv2.getTickCount()
-
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        mask = plateMaskDetector.main(frame)
+        # Generate mosaic
+        if 'stream_type' in header and header['stream_type'] == 1: 
+            cv2.imwrite('test.bmp', frame)
+            result_msg = mosaicHandler.main(frame)
+            region_num = 0
+            region = config.REGIONS[region_num]
+            action = config.ACTIONS[0]
+            bricks = mosaicHandler.getRegion(region_num)
+            results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
+            return results
+
+
+        e1 = cv2.getTickCount()
+        debug.imshow('frame', frame)
+
+        # create trackbars for color change
+        cv2.createTrackbar('lower_h','frame',100,180,plateMaskDetector.nothing)
+        cv2.createTrackbar('lower_s','frame',90,255,plateMaskDetector.nothing)
+        cv2.createTrackbar('lower_v','frame',0,255,plateMaskDetector.nothing)
+                           
+        # create trackbars for color change
+        cv2.createTrackbar('higher_h','frame',140,180,plateMaskDetector.nothing)
+        cv2.createTrackbar('higher_s','frame',255,255,plateMaskDetector.nothing)
+        cv2.createTrackbar('higher_v','frame',255,255,plateMaskDetector.nothing)
+
+
+        lower_h = cv2.getTrackbarPos('lower_h', 'frame')
+        lower_s = cv2.getTrackbarPos('lower_s', 'frame')
+        lower_v = cv2.getTrackbarPos('lower_v', 'frame')
+        higher_h = cv2.getTrackbarPos('higher_h', 'frame')
+        higher_s = cv2.getTrackbarPos('higher_s', 'frame')
+        higher_v = cv2.getTrackbarPos('higher_v', 'frame')
+
+        #lower_h = 100
+        #lower_s = 90
+        #lower_v = 0
+
+        #higher_h = 140
+        #higher_s = 255
+        #higher_v = 255
+
+        mask = plateMaskDetector.main(frame, np.array([lower_h, lower_s, lower_v], dtype=np.uint8), np.array([higher_h, higher_s, higher_v], dtype=np.uint8))
 
         # Bitwise-AND mask and original image
         res = cv2.bitwise_and(frame,frame, mask= mask)
 
 
-        debug.imshow('frame', frame)
         debug.imshow('mask', mask)
         debug.imshow('res', res)
+
 
         lego_img = perspectiveTransform.perspective_transform(frame, mask)
 
         if lego_img is not None:
             #TODO: detect bricks
-            DB = bricksDetector.main(lego_img)
-            cv2.imshow('DB')
+            cv2.imwrite("compare.jpg", frame)
+            region_num = 0
+            bricks = bricksDetector.main(lego_img, region_num)
+            region = config.REGIONS[region_num]
+            action = config.ACTIONS[1]
+            results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
+            return results
 
         cv2.waitKey(1)
         #Performance Measurement 	
