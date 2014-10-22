@@ -48,9 +48,6 @@ import numpy as np
 
 class DummyVideoApp(AppProxyThread):
     def __init__(self, video_frame_queue, result_queue):
-        if os.path.isfile(config.MOSAIC_NAME):
-            os.remove(config.MOSAIC_NAME)
-            print "Reset " + config.MOSAIC_NAME + " file"
         AppProxyThread.__init__(self, video_frame_queue, result_queue)
 
 
@@ -63,6 +60,9 @@ class DummyVideoApp(AppProxyThread):
 
         # Generate mosaic
         if 'stream_type' in header and header['stream_type'] == 1: 
+            if os.path.isfile(config.MOSAIC_NAME):
+                os.remove(config.MOSAIC_NAME)
+                print "Reset " + config.MOSAIC_NAME + " file"
             cv2.imwrite('test.bmp', frame)
             result_msg = mosaicHandler.main(frame)
             region_num = 0
@@ -73,13 +73,18 @@ class DummyVideoApp(AppProxyThread):
             return results
 
 
+        #filename = "./test_images7/frame-" + str(header['id']).zfill(5) + ".jpeg"
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        #cv2.imwrite(filename, frame)
+
+
         e1 = cv2.getTickCount()
         debug.imshow('frame', frame)
 
         # create trackbars for color change
         cv2.createTrackbar('lower_h','frame',100,180,plateMaskDetector.nothing)
         cv2.createTrackbar('lower_s','frame',90,255,plateMaskDetector.nothing)
-        cv2.createTrackbar('lower_v','frame',0,255,plateMaskDetector.nothing)
+        cv2.createTrackbar('lower_v','frame',45,255,plateMaskDetector.nothing)
                            
         # create trackbars for color change
         cv2.createTrackbar('higher_h','frame',140,180,plateMaskDetector.nothing)
