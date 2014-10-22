@@ -58,6 +58,11 @@ class DummyVideoApp(AppProxyThread):
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
+        if config.RECORD == 1:
+            filename = "./test_images8/frame-" + str(header['id']).zfill(5) + ".jpeg"
+            cv2.imwrite(filename, frame)
+            return "some messages"
+
         # Generate mosaic
         if 'stream_type' in header and header['stream_type'] == 1: 
             if os.path.isfile(config.MOSAIC_NAME):
@@ -71,11 +76,6 @@ class DummyVideoApp(AppProxyThread):
             bricks = mosaicHandler.getRegion(region_num)
             results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
             return results
-
-
-        #filename = "./test_images7/frame-" + str(header['id']).zfill(5) + ".jpeg"
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        #cv2.imwrite(filename, frame)
 
 
         e1 = cv2.getTickCount()
@@ -129,7 +129,6 @@ class DummyVideoApp(AppProxyThread):
             results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
             return results
 
-        cv2.waitKey(1)
         #Performance Measurement 	
         e2 = cv2.getTickCount()
         time = (e2 - e1)/ cv2.getTickFrequency()

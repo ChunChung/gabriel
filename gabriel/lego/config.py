@@ -2,6 +2,7 @@ import numpy as np
 # DEBUG 1: on 
 #       2: off
 DEBUG = 1
+RECORD = 0
 
 
 # Our detects color base on BGR model
@@ -33,3 +34,4 @@ ACTIONS = ["start_new_region", "instruction", "complete"]
 MOSAIC_SIZE = 28 # 32 - 2*2
 
 PLATE_SIZE = 32
+
