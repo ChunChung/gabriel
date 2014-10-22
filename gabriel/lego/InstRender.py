@@ -28,6 +28,7 @@ class InstRender:
 	    self.bricks.append(blue_list_32)
 	    for k in range(30):
 		self.bricks.append(blue_list_2 +  none_list_30)
+	    self.bricks[][] = 
 	else if region == config.REGIONS[1] : #top_right
 	    self.bricks.append([config.BLUE for i in range(32)])
             self.bricks.append([config.BLUE for i in range(32)])
