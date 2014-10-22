@@ -41,6 +41,8 @@ def main(img, region):
     mosaic_result = mosaicHandler.getRegion(0)
     result_bricks = compareResult(plate_bricks, mosaic_result, 0)
 
+    cv2.waitKey(0)
+
     return result_bricks
     #print result_bricks
 

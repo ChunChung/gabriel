@@ -49,11 +49,11 @@ def main(frame, lower_blue, upper_blue):
     orig_mask = mask
 
     
-    kernel = np.ones((5,5),np.uint8)
-    mask = cv2.erode (mask,kernel,iterations = 1)
-    mask = cv2.dilate(mask,kernel,iterations = 1)
-    mask = cv2.dilate(mask,kernel,iterations = 1)
-    mask = cv2.erode (mask,kernel,iterations = 1)
+    #kernel = np.ones((5,5),np.uint8)
+    #mask = cv2.erode (mask,kernel,iterations = 1)
+    #mask = cv2.dilate(mask,kernel,iterations = 1)
+    #mask = cv2.dilate(mask,kernel,iterations = 1)
+    #mask = cv2.erode (mask,kernel,iterations = 1)
 
     #if config.DEBUG == 1:
         #debug.imshow("mask", mask)
