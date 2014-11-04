@@ -39,6 +39,7 @@ from gabriel.lego import debug
 from gabriel.lego import plateMaskDetector
 from gabriel.lego import config
 from gabriel.lego import mosaicHandler
+from gabriel.lego import InstRender
 
 import Image
 import io
@@ -74,8 +75,25 @@ class DummyVideoApp(AppProxyThread):
             region = config.REGIONS[region_num]
             action = config.ACTIONS[0]
             bricks = mosaicHandler.getRegion(region_num)
-            results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
-            return results
+            #results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
+            #TODO: pass mosaic 18x18 numpy array into InstRender constructor
+	    self.m = np.empty((18, 18), dtype=np.int32)
+    	    self.m.fill(config.BLUE)
+    	    for i in range(2, 16):
+        	for j in range(2, 16):
+            	    self.m[i, j] = j % 5 + 2
+	    self.ir = InstRender.InstRender(self.m)
+    	    results = self.ir.start(config.REGIONS[0])
+	    return results
+	elif 'stream_type' in header and header['stream_type'] == 2:
+	    #TODO: pass detect numpy array into InstrRender.update()
+            self.d = np.empty((18, 18), dtype=np.int32)
+            self.d.fill(config.BLUE)
+            for i in range(2, 4):
+                for j in range(2, 4):
+                    self.d[i, j] = self.m[i, j]
+            results = self.ir.update(self.d)
+	    return results
 
 
         e1 = cv2.getTickCount()
@@ -127,8 +145,8 @@ class DummyVideoApp(AppProxyThread):
             region = config.REGIONS[region_num]
             action = config.ACTIONS[1]
             results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
-            return results
-
+	    return results
+	
         #Performance Measurement 	
         e2 = cv2.getTickCount()
         time = (e2 - e1)/ cv2.getTickFrequency()
