@@ -5,7 +5,8 @@ import config
 import voice as vc
 
 class InstRender:
-    SIZE = 18	
+    SIZE = 20
+    prev_detects = np.empty((SIZE, SIZE))	
     def __init__(self, mosaic):
 	#TODO: size?
 	assert (mosaic.shape[0] == self.SIZE and mosaic.shape[1] == self.SIZE), "mosaic size should be 32x32"
@@ -62,9 +63,9 @@ class InstRender:
     def update(self, detects):
 	#TODO: size ?
 	assert (detects.shape[0] == self.SIZE and detects.shape[1] == self.SIZE), "detect bricks size should be 32x32"
-	#elif self.region == config.REGIONS[1] : #top_right
-	#elif self.region == config.REGIONS[2] : #bot_left
-	#elif self.region == config.REGIONS[3] : #bot_right
+	# skip if state unchanged
+	if np.array_equal(detects, self.prev_detects):
+	    return ""
 	# detect only the detectable bricks on current region
 	colors, status = self.compare(detects)
 
@@ -72,11 +73,16 @@ class InstRender:
 	    voice = vc.ERROR_BRICKS 	
 	elif any(2 in row for row in status): # if there is any imcomplete
 	    voice = 'keep going'
+	elif self.section >= 16:
+	    return genCompleteResult(self)
 	else:
 	    # TODO: start new region if no more new bricks
 	    self.addNewBricks()
 	    colors, status = self.compare(detects) # update status after add new bricks
 	    voice = vc.NEW_BRICKS
+	
+	self.prev_detects[:] = detects[:]
+	
 	return self.genUpdateResult(colors, status, voice)
 
     # 0: not activate yet 
@@ -111,23 +117,25 @@ class InstRender:
     def genUpdateResult(self, colors, status, voice):
 	return self.genResult(config.ACTIONS[1], self.region, colors, status, voice)
 
+    def genCoompleteResult(self):
+	return self.genResult(config.ACTIONS[2], "", np.array([]), np.array([]), vc.COMPLETE)
 
     def genResult(self, action, region, colors, status, voice):
 	result = {"action": action, "bricks": {"colors":colors.tolist(), "status":status.tolist(), "region": region}, "voice": voice}
 	return result
 
 if __name__ == '__main__':
-    m = np.empty((18, 18), dtype=np.int32)
+    m = np.empty((20, 20), dtype=np.int32)
     m.fill(config.BLUE)
-    for i in range(2, 16):
-        for j in range(2, 16):
+    for i in range(2, 18):
+        for j in range(2, 18):
 	    m[i, j] = j % 5 + 2
     #print m.tolist()
     ir = InstRender(m)
     result = ir.start(config.REGIONS[0])
     print result
     
-    d = np.empty((18, 18), dtype=np.int32)
+    d = np.empty((20, 20), dtype=np.int32)
     d.fill(config.BLUE)
     print "--- detect incomplete, all blue ---"  
     #print ir.bricks
