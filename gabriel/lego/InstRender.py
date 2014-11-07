@@ -6,7 +6,8 @@ import voice as vc
 
 class InstRender:
     SIZE = 20
-    prev_detects = np.empty((SIZE, SIZE))	
+    prev_detects = np.empty((SIZE, SIZE))
+    prev_status = np.empty((SIZE, SIZE))	
     def __init__(self, mosaic):
 	#TODO: size?
 	assert (mosaic.shape[0] == self.SIZE and mosaic.shape[1] == self.SIZE), "mosaic size should be 32x32"
@@ -100,7 +101,7 @@ class InstRender:
 		if np.isnan(self.bricks[i, j]):
 	    	    colors[i, j] = config.BLUE
 	       	    status[i, j] = 0
-		elif self.bricks[i, j] == detects[i, j]:
+		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1: # skip checking previous completed bricks
 	    	    colors[i, j] = self.bricks[i, j]
                     status[i, j] = 1
 		elif detects[i, j] == config.BLUE:
@@ -109,6 +110,7 @@ class InstRender:
         	else:
             	    colors[i, j] = self.bricks[i, j]
             	    status[i, j] = 3
+	self.prev_status[:] = status[:]
 	return colors, status
 
     def genStartNewResult(self, colors, status, voice):
