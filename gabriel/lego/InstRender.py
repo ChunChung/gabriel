@@ -72,7 +72,8 @@ class InstRender:
 	if any(3 in row for row in status): # if there is any error
 	    voice = vc.ERROR_BRICKS 	
 	elif any(2 in row for row in status): # if there is any imcomplete
-	    voice = 'keep going'
+	    return ""
+	    #voice = 'keep going'
 	elif self.section >= 16:
 	    return genCompleteResult(self)
 	else:
