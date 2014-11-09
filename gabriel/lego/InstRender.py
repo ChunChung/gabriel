@@ -6,6 +6,8 @@ import voice as vc
 
 class InstRender:
     SIZE = 20
+    SEC_SIZE = (SIZE - 2) * 2
+    TOTAL_BRICKS = (SIZE-2) * (SIZE-2)
     prev_detects = np.empty((SIZE, SIZE))
     prev_status = np.empty((SIZE, SIZE))	
     def __init__(self, mosaic):
@@ -19,6 +21,7 @@ class InstRender:
 	self.region = region
 	# make the section variable mutable
 	self.section = 0
+	self.pin = 0
 	#set initial bricks
 	self.bricks = np.empty((self.SIZE, self.SIZE))
 	self.bricks.fill(None)
@@ -32,7 +35,7 @@ class InstRender:
 	#elif region == config.REGIONS[2] : #bot_left
 	#elif region == config.REGIONS[3] : #bot_right
 	
-	self.addNewBricks()
+	self.addNewBricks2()
 	
 	init_detect = np.empty((self.SIZE,self.SIZE))
 	init_detect.fill(1)
@@ -40,7 +43,7 @@ class InstRender:
 
 	return self.genStartNewResult(colors, status, voice)
     
-    def addNewBricks(self):
+    def addNewBricks1(self):
 	#TODO: size ?
 	# get region offset
 	offset_x = 2 + 8 * (self.section % 2)
@@ -58,8 +61,18 @@ class InstRender:
 	#increment section
 	self.section += 1
 	
-	
-	
+    def addNewBricks2(self):
+	added = 0
+	while added < 8 and self.pin < self.TOTAL_BRICKS:
+	    sec = self.pin / self.SEC_SIZE
+	    run = self.pin % self.SEC_SIZE
+	    x = 2 + (run / 2)
+	    y = 17 - (sec * 2) - (run % 2)
+	    #print "(", x, y, ")"
+	    self.bricks[y, x] = self.mosaic[y, x]
+	    if self.bricks[y, x] != config.BLUE:
+                added += 1
+    	    self.pin += 1
 
     def update(self, detects):
 	#TODO: size ?
@@ -72,14 +85,13 @@ class InstRender:
 
 	if any(3 in row for row in status): # if there is any error
 	    voice = vc.ERROR_BRICKS 	
-	elif any(2 in row for row in status): # if there is any imcomplete
-	    return ""
-	    #voice = 'keep going'
-	elif self.section >= 16:
+	elif any(2 in row for row in status): # if there is any incomplete
+	    voice = vc.MADE_PROGRESS
+	elif self.pin >= self.TOTAL_BRICKS: #self.section >= 16:
 	    return genCompleteResult(self)
 	else:
 	    # TODO: start new region if no more new bricks
-	    self.addNewBricks()
+	    self.addNewBricks2()
 	    colors, status = self.compare(detects) # update status after add new bricks
 	    voice = vc.NEW_BRICKS
 	
@@ -101,7 +113,7 @@ class InstRender:
 		if np.isnan(self.bricks[i, j]):
 	    	    colors[i, j] = config.BLUE
 	       	    status[i, j] = 0
-		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1: # skip checking previous completed bricks
+		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1 or self.bricks[i, j] == config.BLUE: # skip checking previous completed bricks, skip BLUE
 	    	    colors[i, j] = self.bricks[i, j]
                     status[i, j] = 1
 		elif detects[i, j] == config.BLUE:
@@ -132,35 +144,41 @@ if __name__ == '__main__':
     m.fill(config.BLUE)
     for i in range(2, 18):
         for j in range(2, 18):
-	    m[i, j] = j % 5 + 2
-    #print m.tolist()
+	    m[i, j] = j % 6 + 1
+    print "mosaic = ", m.tolist()
+    print "--- start ---"
     ir = InstRender(m)
     result = ir.start(config.REGIONS[0])
     print result
     
     d = np.empty((20, 20), dtype=np.int32)
     d.fill(config.BLUE)
-    print "--- detect incomplete, all blue ---"  
-    #print ir.bricks
-    print ir.update(d)
+    #print "--- detect incomplete, all blue ---"  
+    #print ir.update(d)
     
     print "--- detect incomplete, finish partial ---"
-    for i in range(2, 4):
+    for i in range(16, 18):
         for j in range(2, 4):
 	    d[i, j] = m[i, j]
     #print ir.bricks
     print ir.update(d)
 
     print "--- detect error ---"
-    d[2, 4] = 3
-    d[2, 5] = 3
-    d[3, 4] = 3
-    d[3, 5] = 3
+    d[16, 4] = 99
+    d[16, 5] = 99
+    d[17, 4] = 99
+    d[17, 5] = 99
     print ir.update(d)
 
     print "--- detect new bricks ---"
-    for i in range(2, 10):
-        for j in range(2, 10):
+    for i in range(16, 18):
+        for j in range(2, 18):
+            d[i, j] = m[i, j]
+    print ir.update(d)
+
+    print "--- complete ---"
+    for i in range(2, 18):
+        for j in range(2, 18):
             d[i, j] = m[i, j]
     print ir.update(d)
     #print ir.bricks
