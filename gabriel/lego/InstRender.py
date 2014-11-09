@@ -3,6 +3,7 @@ import numpy as np
 
 import config
 import voice as vc
+import task1
 
 class InstRender:
     SIZE = 20
@@ -113,7 +114,7 @@ class InstRender:
 		if np.isnan(self.bricks[i, j]):
 	    	    colors[i, j] = config.BLUE
 	       	    status[i, j] = 0
-		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1 or self.bricks[i, j] == config.BLUE: # skip checking previous completed bricks, skip BLUE
+		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1:# or self.bricks[i, j] == config.BLUE: # skip checking previous completed bricks, skip BLUE
 	    	    colors[i, j] = self.bricks[i, j]
                     status[i, j] = 1
 		elif detects[i, j] == config.BLUE:
@@ -147,7 +148,8 @@ if __name__ == '__main__':
 	    m[i, j] = j % 6 + 1
     print "mosaic = ", m.tolist()
     print "--- start ---"
-    ir = InstRender(m)
+    #ir = InstRender(m)
+    ir = InstRender(task1.task)
     result = ir.start(config.REGIONS[0])
     print result
     
