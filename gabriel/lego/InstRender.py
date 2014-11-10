@@ -10,7 +10,7 @@ class InstRender:
     SEC_SIZE = (SIZE - 2) * 2
     TOTAL_BRICKS = (SIZE-2) * (SIZE-2)
     prev_detects = np.empty((SIZE, SIZE))
-    prev_status = np.empty((SIZE, SIZE))	
+    prev_status = np.empty((SIZE, SIZE), dtype=np.int32)	
     def __init__(self, mosaic):
 	#TODO: size?
 	assert (mosaic.shape[0] == self.SIZE and mosaic.shape[1] == self.SIZE), "mosaic size should be 32x32"
@@ -36,10 +36,11 @@ class InstRender:
 	#elif region == config.REGIONS[2] : #bot_left
 	#elif region == config.REGIONS[3] : #bot_right
 	
-	self.addNewBricks2()
-	
 	init_detect = np.empty((self.SIZE,self.SIZE))
 	init_detect.fill(1)
+
+        self.addNewBricks2(init_detect)
+
 	colors, status = self.compare(init_detect)
 
 	return self.genStartNewResult(colors, status, voice)
@@ -58,11 +59,10 @@ class InstRender:
 	    for i in range(2):
                 for j in range(8):
                     self.bricks[offset_y+i, offset_x+j] = self.mosaic[offset_y+i, offset_x+j]
-
 	#increment section
 	self.section += 1
 	
-    def addNewBricks2(self):
+    def addNewBricks2(self, detects):
 	added = 0
 	while added < 8 and self.pin < self.TOTAL_BRICKS:
 	    sec = self.pin / self.SEC_SIZE
@@ -71,7 +71,7 @@ class InstRender:
 	    y = 17 - (sec * 2) - (run % 2)
 	    #print "(", x, y, ")"
 	    self.bricks[y, x] = self.mosaic[y, x]
-	    if self.bricks[y, x] != config.BLUE:
+	    if self.bricks[y, x] != config.BLUE and self.bricks[y, x] != detects[y, x]: # TODO: skip detect correct
                 added += 1
     	    self.pin += 1
 
@@ -79,24 +79,28 @@ class InstRender:
 	#TODO: size ?
 	assert (detects.shape[0] == self.SIZE and detects.shape[1] == self.SIZE), "detect bricks size should be 32x32"
 	# skip if state unchanged
-	if np.array_equal(detects, self.prev_detects):
-	    return ""
+	#if np.array_equal(detects, self.prev_detects):
+	#    return ""
 	# detect only the detectable bricks on current region
 	colors, status = self.compare(detects)
-
+	#print "prev:", self.prev_status.tolist()
+        #print "status:", status.tolist()
+	if np.array_equal(status, self.prev_status):
+            return ""
+	self.prev_status[:] = status[:]
 	if any(3 in row for row in status): # if there is any error
 	    voice = vc.ERROR_BRICKS 	
 	elif any(2 in row for row in status): # if there is any incomplete
 	    voice = vc.MADE_PROGRESS
-	elif self.pin >= self.TOTAL_BRICKS: #self.section >= 16:
-	    return genCompleteResult(self)
 	else:
 	    # TODO: start new region if no more new bricks
-	    self.addNewBricks2()
+	    self.addNewBricks2(detects)
 	    colors, status = self.compare(detects) # update status after add new bricks
 	    voice = vc.NEW_BRICKS
 	
-	self.prev_detects[:] = detects[:]
+	if self.pin >= self.TOTAL_BRICKS: 
+            return self.genCompleteResult()
+	#self.prev_detects[:] = detects[:]
 	
 	return self.genUpdateResult(colors, status, voice)
 
@@ -123,7 +127,7 @@ class InstRender:
         	else:
             	    colors[i, j] = self.bricks[i, j]
             	    status[i, j] = 3
-	self.prev_status[:] = status[:]
+	#self.prev_status[:] = status[:]
 	return colors, status
 
     def genStartNewResult(self, colors, status, voice):
@@ -133,7 +137,7 @@ class InstRender:
     def genUpdateResult(self, colors, status, voice):
 	return self.genResult(config.ACTIONS[1], self.region, colors, status, voice)
 
-    def genCoompleteResult(self):
+    def genCompleteResult(self):
 	return self.genResult(config.ACTIONS[2], "", np.array([]), np.array([]), vc.COMPLETE)
 
     def genResult(self, action, region, colors, status, voice):
@@ -148,8 +152,8 @@ if __name__ == '__main__':
 	    m[i, j] = j % 6 + 1
     print "mosaic = ", m.tolist()
     print "--- start ---"
-    #ir = InstRender(m)
-    ir = InstRender(task1.task)
+    ir = InstRender(m)
+    #ir = InstRender(task1.task)
     result = ir.start(config.REGIONS[0])
     print result
     
@@ -183,6 +187,5 @@ if __name__ == '__main__':
         for j in range(2, 18):
             d[i, j] = m[i, j]
     print ir.update(d)
-    #print ir.bricks
 
 
