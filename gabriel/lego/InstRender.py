@@ -25,16 +25,22 @@ class InstRender:
 	self.pin = 0
 	#set initial bricks
 	self.bricks = np.empty((self.SIZE, self.SIZE))
-	self.bricks.fill(None)
-	self.bricks[0:2, :] = config.BLUE
-	self.bricks[self.SIZE-2:self.SIZE, :] = config.BLUE
-	self.bricks[:, 0:2] = config.BLUE
-	self.bricks[:, self.SIZE-2:self.SIZE] = config.BLUE
+	self.bricks.fill(config.BLUE)
+	#self.bricks[0:2, :] = config.BLUE
+	#self.bricks[self.SIZE-2:self.SIZE, :] = config.BLUE
+	#self.bricks[:, 0:2] = config.BLUE
+	#self.bricks[:, self.SIZE-2:self.SIZE] = config.BLUE
+	# activate all BLUE
+	#for i in range(self.SIZE):
+        #    for j in range(self.SIZE):
+ 	#        if(self.mosaic[i,j] == config.BLUE):
+	#	     self.bricks[i,j] = config.BLUE 
 	if region == config.REGIONS[0] : #top_left
 	    voice = vc.START_NEW_TOP_LEFT
 	#elif region == config.REGIONS[1] : #top_right
 	#elif region == config.REGIONS[2] : #bot_left
 	#elif region == config.REGIONS[3] : #bot_right
+	
 	
 	init_detect = np.empty((self.SIZE,self.SIZE))
 	init_detect.fill(1)
@@ -91,15 +97,21 @@ class InstRender:
 	if any(3 in row for row in status): # if there is any error
 	    voice = vc.ERROR_BRICKS 	
 	elif any(2 in row for row in status): # if there is any incomplete
-	    voice = vc.MADE_PROGRESS
+	    if any(4 in row2 for row2 in status):
+	        voice = vc.ERROR_BRICKS_ON_BLUE
+	    else :
+	        voice = vc.MADE_PROGRESS
 	else:
 	    # TODO: start new region if no more new bricks
 	    self.addNewBricks2(detects)
 	    colors, status = self.compare(detects) # update status after add new bricks
-	    voice = vc.NEW_BRICKS
-	
-	if self.pin >= self.TOTAL_BRICKS: 
-            return self.genCompleteResult()
+	    if any(4 in row2 for row2 in status):
+		voice = vc.NEW_BRICKS_ERROR_ON_BLUE
+	    else:
+	        voice = vc.NEW_BRICKS
+	    if self.pin >= self.TOTAL_BRICKS: 
+                return self.genCompleteResult()
+
 	#self.prev_detects[:] = detects[:]
 	
 	return self.genUpdateResult(colors, status, voice)
@@ -115,18 +127,31 @@ class InstRender:
 	status = np.empty((self.SIZE,self.SIZE), dtype=np.int32)
 	for i in range(self.SIZE):
 	    for j in range(self.SIZE):
-		if np.isnan(self.bricks[i, j]):
-	    	    colors[i, j] = config.BLUE
-	       	    status[i, j] = 0
-		elif self.bricks[i, j] == detects[i, j] or self.prev_status[i, j] == 1:# or self.bricks[i, j] == config.BLUE: # skip checking previous completed bricks, skip BLUE
-	    	    colors[i, j] = self.bricks[i, j]
-                    status[i, j] = 1
-		elif detects[i, j] == config.BLUE:
-	    	    colors[i, j] = self.bricks[i, j]
-	    	    status[i, j] = 2
-        	else:
-            	    colors[i, j] = self.bricks[i, j]
-            	    status[i, j] = 3
+		colors[i,j] = self.bricks[i,j]
+		if self.bricks[i,j] == config.BLUE:
+		    if detects[i,j] == config.BLUE:
+			status[i,j] = 1 
+		    else: 
+			status[i,j] = 4 # error if bricks on BLUE region
+		else:
+		    if detects[i,j] == self.bricks[i,j] or (self.bricks[i,j]!=config.BLUE and self.prev_status[i,j] == 1):
+			status[i,j] = 1
+		    elif detects[i,j] == config.BLUE:
+			status[i,j] = 2 # imcomplete
+		    else:
+			status[i,j] = 3 #error if bricks color is not match
+		#if np.isnan(self.bricks[i, j]):
+	    	#    colors[i, j] = config.BLUE
+	       	#    status[i, j] = 0
+		#elif self.bricks[i, j] == detects[i, j] or (self.bricks[i,j]!=config.BLUE and self.prev_status[i,j]==1):# or self.bricks[i, j] == config.BLUE: # skip checking previous completed bricks, skip BLUE
+	    	#    colors[i, j] = self.bricks[i, j]
+                #    status[i, j] = 1
+		#elif detects[i, j] == config.BLUE:
+	    	#    colors[i, j] = self.bricks[i, j]
+	    	#    status[i, j] = 2
+        	#else:
+            	#    colors[i, j] = self.bricks[i, j]
+            	#    status[i, j] = 3
 	#self.prev_status[:] = status[:]
 	return colors, status
 
@@ -155,6 +180,7 @@ if __name__ == '__main__':
     ir = InstRender(m)
     #ir = InstRender(task1.task)
     result = ir.start(config.REGIONS[0])
+    print "init bricks = ", ir.bricks.tolist()
     print result
     
     d = np.empty((20, 20), dtype=np.int32)
@@ -168,18 +194,33 @@ if __name__ == '__main__':
 	    d[i, j] = m[i, j]
     #print ir.bricks
     print ir.update(d)
+    
+    print "--- error on blue ---"
+    d[2, 2] = 99 #BLUE region
+    d[2, 3] = 99 #BLUE region
+    print ir.update(d)
 
     print "--- detect error ---"
     d[16, 4] = 99
     d[16, 5] = 99
     d[17, 4] = 99
     d[17, 5] = 99
+    #d[15, 4] = 99 #BLUE region
+    #d[15, 5] = 99 #BLUE region
     print ir.update(d)
 
-    print "--- detect new bricks ---"
+    print "--- detect new bricks with error on blue ---"
     for i in range(16, 18):
         for j in range(2, 18):
             d[i, j] = m[i, j]
+    print ir.update(d)
+    
+    print "--- detect new bricks ---"
+    for i in range(14, 18):
+        for j in range(2, 18):
+            d[i, j] = m[i, j]
+    d[2,2] = config.BLUE
+    d[2,3] = config.BLUE
     print ir.update(d)
 
     print "--- complete ---"
