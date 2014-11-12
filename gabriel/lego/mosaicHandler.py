@@ -20,7 +20,6 @@ def main(img):
         e1 = cv2.getTickCount()
         print "start mosaic image handler"
 
-
     if not os.path.isfile(config.MOSAIC_NAME):
         mosaic = generateMosaic(img)
         cv2.imwrite(config.MOSAIC_NAME, mosaic)
@@ -35,33 +34,35 @@ def main(img):
 def getMosaicZone():
     return 1
 
-def getRegion(region_num):
+def getMosaic(mosaic_img=None):
     #1: incomplete, expect empty(blue)
     #2: incomplete, expect black
     #3: incomplete, expect white
     #4: incomplete, expect light grey
     #5: incomplete, expect deep grey
     #6: incomplete, expect brown
-    p_size = config.PLATE_SIZE/2
-    bricks = [[7]*p_size for x in range(p_size)]
+    p_size = config.PLATE_SIZE
 
-    mosaic_img = cv2.imread(config.MOSAIC_NAME)
+    bricks = np.empty((p_size, p_size), dtype=np.int32)
+    bricks.fill(config.BLUE)
+
+    if mosaic_img is None:
+        mosaic_img = cv2.imread(config.MOSAIC_NAME)
 
     #if config.DEBUG == 1:
     #    debug.imshow("Mosaic", mosaic_img)
-    if region_num == 0:
-        for i in range(0,14):
-            for j in range(0, 14):
-                if np.array_equal(mosaic_img[i][j], config.COLOR_BLUE[0][0]):
-                    bricks[i+2][j+2] = 7
-                elif np.array_equal(mosaic_img[i][j], config.COLOR_BLACK[0][0]):
-                    bricks[i+2][j+2] = 2
-                elif np.array_equal(mosaic_img[i][j], config.COLOR_WHITE[0][0]):
-                    bricks[i+2][j+2] = 3
-                elif np.array_equal(mosaic_img[i][j], config.COLOR_GRAY[0][0]):
-                    bricks[i+2][j+2] = 5
-                else:
-                    bricks[i+2][j+2] = 6
+    for i in range(0,config.MOSAIC_SIZE):
+        for j in range(0, config.MOSAIC_SIZE):
+            if np.array_equal(mosaic_img[i][j], config.COLOR_BLUE[0][0]):
+                bricks[i+2][j+2] = 7
+            elif np.array_equal(mosaic_img[i][j], config.COLOR_BLACK[0][0]):
+                bricks[i+2][j+2] = 2
+            elif np.array_equal(mosaic_img[i][j], config.COLOR_WHITE[0][0]):
+                bricks[i+2][j+2] = 3
+            elif np.array_equal(mosaic_img[i][j], config.COLOR_DARKGRAY[0][0]):
+                bricks[i+2][j+2] = 5
+            else:
+                bricks[i+2][j+2] = 6
 
     return bricks
 
@@ -80,11 +81,11 @@ def generateMosaic(img):
 
     if local_debug == 1:
         cv2.imshow('Mosaic_Orig', orig_img)
-        #cv2.imshow("gray", gray_mosaic_img)
+        cv2.imshow("gray", gray_mosaic_img)
         #cv2.imshow("bricks", bricks_mosaic_img)
         #cv2.imshow("resize", resize_img)
         #cv2.imshow("resize_gray", resize_img_gray)
-        cv2.imshow("Mosaic_Result", result_img)
+        #cv2.imshow("Mosaic_Result", result_img)
         cv2.waitKey(0)
 
     return gray_mosaic_img
@@ -94,17 +95,14 @@ def grayMosaic(img):
     rows, cols = img.shape
 
     res_img = np.empty((config.MOSAIC_SIZE,config.MOSAIC_SIZE,3), dtype=np.uint8)
-
-
-    
     for i in range(0,rows):
         for j in range(0,cols):
             if 180 < img[i][j] <= 255:
                 res_img[i][j] = config.COLOR_WHITE
-            #elif 150 < img[i][j] <= 190:
-            #    res_img[i][j] = config.COLOR_BROWN
-            elif 105 < img[i][j] <= 180:
-                res_img[i][j] = config.COLOR_GRAY
+            elif 150 < img[i][j] <= 180:
+                res_img[i][j] = config.COLOR_BROWN
+            elif 105 < img[i][j] <= 150:
+                res_img[i][j] = config.COLOR_DARKGRAY
             else:
                 res_img[i][j] = config.COLOR_BLACK
 
@@ -126,4 +124,4 @@ if __name__ == "__main__":
     img = cv2.imread(sys.argv[1])
     local_debug = 1
     main(img)
-    print getRegion(0)
+    print getMosaic()

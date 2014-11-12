@@ -40,6 +40,9 @@ from gabriel.lego import plateMaskDetector
 from gabriel.lego import config
 from gabriel.lego import mosaicHandler
 from gabriel.lego import InstRender
+from gabriel.lego import InstRender
+from gabriel.lego import task1
+
 
 import Image
 import io
@@ -55,6 +58,12 @@ class DummyVideoApp(AppProxyThread):
 
     def handle(self, header, data):
         #print "start:" + str(time.time())
+
+        if 'stream_type' in header and header['stream_type'] == 3 and not hasattr(self, 'ir'):
+            self.ir = InstRender.InstRender(task1.task)
+            results = self.ir.start(config.REGIONS[0])
+            return results
+
         imagere = Image.open(io.BytesIO(data))
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -74,26 +83,18 @@ class DummyVideoApp(AppProxyThread):
             region_num = 0
             region = config.REGIONS[region_num]
             action = config.ACTIONS[0]
-            bricks = mosaicHandler.getRegion(region_num)
+            bricks = mosaicHandler.getMosaic()
             #results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
             #TODO: pass mosaic 18x18 numpy array into InstRender constructor
-	    self.m = np.empty((18, 18), dtype=np.int32)
-    	    self.m.fill(config.BLUE)
-    	    for i in range(2, 16):
-        	for j in range(2, 16):
-            	    self.m[i, j] = j % 5 + 2
-	    self.ir = InstRender.InstRender(self.m)
-    	    results = self.ir.start(config.REGIONS[0])
-	    return results
-	elif 'stream_type' in header and header['stream_type'] == 2:
-	    #TODO: pass detect numpy array into InstrRender.update()
-            self.d = np.empty((18, 18), dtype=np.int32)
-            self.d.fill(config.BLUE)
-            for i in range(2, 4):
-                for j in range(2, 4):
-                    self.d[i, j] = self.m[i, j]
-            results = self.ir.update(self.d)
-	    return results
+	    #self.m = np.empty((18, 18), dtype=np.int32)
+    	#    self.m.fill(config.BLUE)
+    	#    for i in range(2, 16):
+        #	for j in range(2, 16):
+        #    	    self.m[i, j] = j % 5 + 2
+            self.ir = InstRender.InstRender(bricks)
+            results = self.ir.start(config.REGIONS[0])
+            return results
+
 
 
         e1 = cv2.getTickCount()
@@ -141,10 +142,17 @@ class DummyVideoApp(AppProxyThread):
             #TODO: detect bricks
             cv2.imwrite("compare.jpg", frame)
             region_num = 0
-            bricks = bricksDetector.main(lego_img, region_num)
+            bricks = bricksDetector.main(lego_img)
             region = config.REGIONS[region_num]
             action = config.ACTIONS[1]
-            results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
+
+            if hasattr(self, 'ir'):
+                results = self.ir.update(bricks)
+            else:
+                mosaic_bricks = mosaicHandler.getMosaic()
+                self.ir = InstRender.InstRender(mosaic_bricks)
+                self.ir.start(config.REGIONS[0])
+                results = self.ir.update(bricks)
 	    return results
 	
         #Performance Measurement 	

@@ -8,54 +8,320 @@ import math
 import config
 import debug
 import mosaicHandler
+import time
+from scipy.stats import itemfreq
 
 if os.path.isdir("../gabriel") is True:
     sys.path.insert(0, "..")
 
-def main(img, region):
+def main(img):
+    print '----- start ', sys.modules[__name__], '-----'
+
+    #while(1):
     if config.DEBUG:
         e1 = cv2.getTickCount()
-        cv2.imwrite("backup.jpg",img)
 
-    orig_img = img
+    cv2.namedWindow("Detected_Bricks_w/o_Resize")
 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    orig_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    cv2.imshow("Transform_Plate", orig_img)
 
-    resize_img = cv2.resize(img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE), interpolation=cv2.INTER_CUBIC)
-    resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
 
-    res_img = detectBricks_v2(resize_img)
+    #resize_img = cv2.resize(orig_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE), interpolation=cv2.INTER_CUBIC)
+    #resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
+
+    #res_img = detectBricks_v2(resize_img)
+    res_window_img = detectBricks_window(orig_img)
+    #resize_window_img = cv2.resize(res_window_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE))
+
+    #plate_bricks_window = setBricks(res_window_img, config.PLATE_SIZE*10)
+
+    final_img = setColors(res_window_img)
 
     if config.DEBUG:
-        cv2.imshow("Detected_Bricks", res_img)
-
-    plate_bricks = setBricks(res_img)
-
-    #for i in range(0, config.PLATE_SIZE):
-    #    for j in range(0, config.PLATE_SIZE):
-    #        print str(plate_bricks[i][j]).zfill(2), 
-    #    print ""
-
-    mosaic_result = mosaicHandler.getRegion(0)
-    result_bricks = compareResult(plate_bricks, mosaic_result, 0)
-
-    cv2.waitKey(0)
-
-    return result_bricks
-    #print result_bricks
+        cv2.imshow("Transformed_Plate", img)
+        #enlargeImg = showEnlargeImg(res_img, 10)
+        #cv2.imshow("Detected_Bricks", enlargeImg)
+        cv2.imshow("Detected_Bricks_w/o_Resize", res_window_img)
+        #cv2.imshow("Detected_Bricks_w/o_Resize_Window", showEnlargeImg(resize_window_img, 10))
+        cv2.imshow("Detected_Bricks_final", showEnlargeImg(final_img, 10))
+        #cv2.imshow("final", final_img)
 
 
-    #if config.DEBUG:
-    #    e2 = cv2.getTickCount()
-    #    time = (e2 - e1)/ cv2.getTickFrequency()
-    #    print 'processing time: ', time
-    #    cv2.imshow('orig', orig_img)
-    #    cv2.imshow('32_32_orig', resize_img)
-    #    cv2.imshow('32_32_after', res_img)
-    #    cv2.waitKey(0)
-    #return 
+    plate_bricks = setBricks(final_img, config.PLATE_SIZE)
+    #mosaic_result = mosaicHandler.getRegion(0)
+    #result_bricks = compareResult(plate_bricks, mosaic_result, 0)
+
+
+
+    return plate_bricks
+
+def setColors(input_img):
+    res_img = np.empty((config.PLATE_SIZE, config.PLATE_SIZE, 3), dtype=np.uint8)
+    for i in range(config.PLATE_SIZE):
+        for j in range(config.PLATE_SIZE):
+            partial_array = input_img[i*16:((i+1)*16), j*16:((j+1)*16)]
+            freq_ = itemfreq(partial_array)
+
+            freq_ = sorted(freq_, key=lambda x: x[1], reverse=True)
+            #print len(freq_)
+            color_count = len(freq_)/3
+
+            colorScore = np.zeros((color_count, 2))
+
+            for x in range(0, color_count):
+                colorScore[x][0] = freq_[x*3][0]
+                colorScore[x][1] = freq_[x*3][1]
+
+            max_idx = -1
+            max_value = 0
+            for x in range(0, color_count):
+                if colorScore[x][0] == 2 or colorScore[x][0] == 100 or colorScore[x][0] == 3:
+                    if colorScore[x][1] < 50:
+                        max_value = 0
+                        for y in range(0, color_count):
+                            if y != x:
+                                if colorScore[y][0] == 255 or colorScore[y][0] == 0 or colorScore[y][0] == 1: 
+                                    colorScore[y][1] = colorScore[y][1]
+                                else:
+                                    colorScore[y][1] = colorScore[x][1] * 0.5 + colorScore[y][1]  
+
+                                if colorScore[y][1] > max_value:
+                                    max_value = colorScore[y][1]
+                                    max_idx = y
+                        break
+                else:
+                    if colorScore[x][1] > max_value:
+                        max_value = colorScore[x][1]
+                        max_idx = x
+
+            #print colorScore[max_idx][0], max_value
+
+            if max_idx != -1 and max_value > 60:
+                if colorScore[max_idx][0] == 18 or colorScore[max_idx][0] == 9 or colorScore[max_idx][0] == 5:
+                    res_img[i][j] = config.COLOR_BLACK
+                elif colorScore[max_idx][0] == 252 or colorScore[max_idx][0] == 254 or colorScore[max_idx][0] == 253:
+                    res_img[i][j] = config.COLOR_WHITE
+                elif colorScore[max_idx][0] == 35 or colorScore[max_idx][0] == 39 or colorScore[max_idx][0] == 88:
+                    res_img[i][j] = config.COLOR_BROWN
+                elif colorScore[max_idx][0] == 66 or colorScore[max_idx][0] == 59 or colorScore[max_idx][0] == 50:
+                    res_img[i][j] = config.COLOR_DARKGRAY
+                else:
+                    res_img[i][j] = config.COLOR_BLUE
+            else:
+                res_img[i][j] = config.COLOR_BLUE
+
+
+
+            #if freq_[0][1] > 1:
+            #    if freq_[0][0] == 18 or freq_[0][0] == 9 or freq_[0][0] == 5:
+            #        res_img[i][j] = config.COLOR_BLACK
+            #    elif freq_[0][0] == 252 or freq_[0][0] == 254 or freq_[0][0] == 253:
+            #        res_img[i][j] = config.COLOR_WHITE
+            #    elif freq_[0][0] == 35 or freq_[0][0] == 39 or freq_[0][0] == 88:
+            #        res_img[i][j] = config.COLOR_BROWN
+            #    elif freq_[0][0] == 66 or freq_[0][0] == 59 or freq_[0][0] == 50:
+            #        res_img[i][j] = config.COLOR_DARKGRAY
+            #    else:
+            #        if freq_ [0][1] == 100:
+            #            res_img[i][j] = config.COLOR_BLUE
+            #        else:
+            #            if freq_[3][1] > 40:
+            #                if freq_[3][0] == 18 or freq_[3][0] == 9 or freq_[3][0] == 5:
+            #                    res_img[i][j] = config.COLOR_BLACK
+            #                elif freq_[3][0] == 252 or freq_[3][0] == 254 or freq_[3][0] == 253:
+            #                    res_img[i][j] = config.COLOR_WHITE
+            #                elif freq_[3][0] == 35 or freq_[3][0] == 39 or freq_[3][0] == 88:
+            #                    res_img[i][j] = config.COLOR_BROWN
+            #                elif freq_[3][0] == 66 or freq_[3][0] == 59 or freq_[3][0] == 50:
+            #                    res_img[i][j] = config.COLOR_DARKGRAY
+            #                else:
+            #                    res_img[i][j] = config.COLOR_BLUE
+            #            else:
+            #                res_img[i][j] = config.COLOR_BLUE
+            #else:
+            #    res_img[i][j] = config.COLOR_BLUE
+    return res_img
+
+def showEnlargeImg(res_img, times):
+    colors_num = len(config.COLORS)
+
+    rows, cols, channels = res_img.shape
+
+    result = np.empty((rows*times,cols*times, 3), dtype=np.uint8)
+
+    for i in range(0, rows):
+        for j in range(0, cols):
+            for m in range(i*times, (i+1)*times):
+                for n in range(j*times, (j+1)*times):
+                    result[m][n] = res_img[i][j]
+    return result
+
+def nothing(x):
+    pass
+
+def printHSV(resize_img,l_cols, l_rows, h_cols, h_rows):
+    rows, cols, channels = img.shape
+    
+    for j in range(l_rows, h_rows):
+        for i in range(l_cols, h_cols):
+            print resize_img[i][j]
+
+    print rows, cols
+
+def detectBricks_window(resize_img):
+    colors_num = len(config.COLORS)
+    rows, cols, channels = resize_img.shape
+
+
+    # Default Value
+    lower_black = config.LOWER_BLACK
+    upper_black = config.UPPER_BLACK
+
+    lower_dark_gray = config.LOWER_DARK_GRAY
+    upper_dark_gray = config.UPPER_DARK_GRAY
+
+    lower_brown = config.LOWER_BROWN
+    upper_brown = config.UPPER_BROWN
+
+    lower_brown2 = config.LOWER_BROWN2
+    upper_brown2 = config.UPPER_BROWN2
+
+    lower_white = config.LOWER_WHITE
+    upper_white = config.UPPER_WHITE
+
+    if config.DEBUG == 1:
+        cv2.createTrackbar('b_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[0],180,nothing)
+        cv2.createTrackbar('b_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[1],255,nothing)
+        cv2.createTrackbar('b_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[2],255,nothing)
+        # create trackbars fb_or color change
+        cv2.createTrackbar('b_higher_h','Detected_Bricks_w/o_Resize',config.UPPER_BLACK[0],180,nothing)
+        cv2.createTrackbar('b_higher_s','Detected_Bricks_w/o_Resize',config.UPPER_BLACK[1],255,nothing)
+        cv2.createTrackbar('b_higher_v','Detected_Bricks_w/o_Resize',config.UPPER_BLACK[2],255,nothing)
+        b_lower_h = cv2.getTrackbarPos('b_lower_h', 'Detected_Bricks_w/o_Resize')
+        b_lower_s = cv2.getTrackbarPos('b_lower_s', 'Detected_Bricks_w/o_Resize')
+        b_lower_v = cv2.getTrackbarPos('b_lower_v', 'Detected_Bricks_w/o_Resize')
+        b_higher_h = cv2.getTrackbarPos('b_higher_h', 'Detected_Bricks_w/o_Resize')
+        b_higher_s = cv2.getTrackbarPos('b_higher_s', 'Detected_Bricks_w/o_Resize')
+        b_higher_v = cv2.getTrackbarPos('b_higher_v', 'Detected_Bricks_w/o_Resize')
+
+        cv2.createTrackbar('dg_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_DARK_GRAY[0],180,nothing)
+        cv2.createTrackbar('dg_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_DARK_GRAY[1],255,nothing)
+        cv2.createTrackbar('dg_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_DARK_GRAY[2],255,nothing)
+        # create trackbars fb_or color change
+        cv2.createTrackbar('dg_higher_h','Detected_Bricks_w/o_Resize',config.UPPER_DARK_GRAY[0],180,nothing)
+        cv2.createTrackbar('dg_higher_s','Detected_Bricks_w/o_Resize',config.UPPER_DARK_GRAY[1],255,nothing)
+        cv2.createTrackbar('dg_higher_v','Detected_Bricks_w/o_Resize',config.UPPER_DARK_GRAY[2],255,nothing)
+        dg_lower_h = cv2.getTrackbarPos('dg_lower_h', 'Detected_Bricks_w/o_Resize')
+        dg_lower_s = cv2.getTrackbarPos('dg_lower_s', 'Detected_Bricks_w/o_Resize')
+        dg_lower_v = cv2.getTrackbarPos('dg_lower_v', 'Detected_Bricks_w/o_Resize')
+        dg_higher_h = cv2.getTrackbarPos('dg_higher_h', 'Detected_Bricks_w/o_Resize')
+        dg_higher_s = cv2.getTrackbarPos('dg_higher_s', 'Detected_Bricks_w/o_Resize')
+        dg_higher_v = cv2.getTrackbarPos('dg_higher_v', 'Detected_Bricks_w/o_Resize')
+
+        cv2.createTrackbar('br_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_BROWN[0],180,nothing)
+        cv2.createTrackbar('br_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_BROWN[1],255,nothing)
+        cv2.createTrackbar('br_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_BROWN[2],255,nothing)
+        # create trackbars fb_or color change
+        cv2.createTrackbar('br_higher_h','Detected_Bricks_w/o_Resize',config.UPPER_BROWN[0],180,nothing)
+        cv2.createTrackbar('br_higher_s','Detected_Bricks_w/o_Resize',config.UPPER_BROWN[1],255,nothing)
+        cv2.createTrackbar('br_higher_v','Detected_Bricks_w/o_Resize',config.UPPER_BROWN[2],255,nothing)
+        br_lower_h = cv2.getTrackbarPos('br_lower_h', 'Detected_Bricks_w/o_Resize')
+        br_lower_s = cv2.getTrackbarPos('br_lower_s', 'Detected_Bricks_w/o_Resize')
+        br_lower_v = cv2.getTrackbarPos('br_lower_v', 'Detected_Bricks_w/o_Resize')
+        br_higher_h = cv2.getTrackbarPos('br_higher_h', 'Detected_Bricks_w/o_Resize')
+        br_higher_s = cv2.getTrackbarPos('br_higher_s', 'Detected_Bricks_w/o_Resize')
+        br_higher_v = cv2.getTrackbarPos('br_higher_v', 'Detected_Bricks_w/o_Resize')
+
+        cv2.createTrackbar('w_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_WHITE[0],180,nothing)
+        cv2.createTrackbar('w_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_WHITE[1],255,nothing)
+        cv2.createTrackbar('w_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_WHITE[2],255,nothing)
+        # create trackbars fb_or color change
+        cv2.createTrackbar('w_higher_h','Detected_Bricks_w/o_Resize',config.UPPER_WHITE[0],180,nothing)
+        cv2.createTrackbar('w_higher_s','Detected_Bricks_w/o_Resize',config.UPPER_WHITE[1],255,nothing)
+        cv2.createTrackbar('w_higher_v','Detected_Bricks_w/o_Resize',config.UPPER_WHITE[2],255,nothing)
+        w_lower_h = cv2.getTrackbarPos('w_lower_h', 'Detected_Bricks_w/o_Resize')
+        w_lower_s = cv2.getTrackbarPos('w_lower_s', 'Detected_Bricks_w/o_Resize')
+        w_lower_v = cv2.getTrackbarPos('w_lower_v', 'Detected_Bricks_w/o_Resize')
+        w_higher_h = cv2.getTrackbarPos('w_higher_h', 'Detected_Bricks_w/o_Resize')
+        w_higher_s = cv2.getTrackbarPos('w_higher_s', 'Detected_Bricks_w/o_Resize')
+        w_higher_v = cv2.getTrackbarPos('w_higher_v', 'Detected_Bricks_w/o_Resize')
+        
+
+        print "b_lower", b_lower_h, b_lower_s, b_lower_v, "b_higher", b_higher_h, b_higher_s, b_higher_v
+        print "dg_lower", dg_lower_h, dg_lower_s, dg_lower_v, "dg_higher", dg_higher_h, dg_higher_s, dg_higher_v
+        print "br_lower", br_lower_h, br_lower_s, br_lower_v, "br_higher", br_higher_h, br_higher_s, br_higher_v
+        print "w_lower", w_lower_h, w_lower_s, w_lower_v, "w_higher", w_higher_h, w_higher_s, w_higher_v
+
+        lower_black = np.array([b_lower_h, b_lower_s, b_lower_v], dtype=np.uint8)
+        upper_black = np.array([b_higher_h, b_higher_s, b_higher_v], dtype=np.uint8)
+
+        lower_dark_gray = np.array([dg_lower_h, dg_lower_s, dg_lower_v], dtype=np.uint8)
+        upper_dark_gray = np.array([dg_higher_h, dg_higher_s, dg_higher_v], dtype=np.uint8)
+
+        lower_brown = np.array([br_lower_h, br_lower_s, br_lower_v], dtype=np.uint8)
+        upper_brown = np.array([br_higher_h, br_higher_s, br_higher_v], dtype=np.uint8)
+
+        lower_brown2 = np.array([130, 60, 40], dtype=np.uint8)
+        upper_brown2 = np.array([180, 110, 60], dtype=np.uint8)
+
+        lower_white = np.array([w_lower_h, w_lower_s, w_lower_v], dtype=np.uint8)
+        upper_white = np.array([w_higher_h, w_higher_s, w_higher_v], dtype=np.uint8)
+
+
+    res_img = np.empty((config.TRANSFORM_SIZE, config.TRANSFORM_SIZE,3), dtype=np.uint8)
+    hsv = resize_img
+    #hsv = cv2.cvtColor(resize_img, cv2.COLOR_BGR2HSV)
+
+    mask_dark_gray = cv2.inRange(hsv, lower_dark_gray, upper_dark_gray)
+    mask_black = cv2.inRange(hsv, lower_black, upper_black)
+    mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+    mask_brown2 = cv2.inRange(hsv, lower_brown2, upper_brown2)
+    mask_white = cv2.inRange(hsv, lower_white, upper_white)
+    mask_blue = cv2.inRange(hsv, config.LOWER_BLUE, config.UPPER_BLUE)
+
+    #bricks = [[1]*config.TRANSFORM_SIZE for x in range(config.TRANSFORM_SIZE)]
+
+    for i in range(0, config.TRANSFORM_SIZE):
+        for j in range(0, config.TRANSFORM_SIZE):
+            if mask_white[i][j] == 255:
+                res_img[i][j] = config.COLOR_WHITE
+            elif mask_dark_gray[i][j] == 255:
+                res_img[i][j] = config.COLOR_DARKGRAY
+            elif mask_brown[i][j] == 255:
+                res_img[i][j] = config.COLOR_BROWN
+            elif mask_brown2[i][j] == 255:
+                res_img[i][j] = config.COLOR_BROWN
+            elif mask_black[i][j] == 255:
+                res_img[i][j] = config.COLOR_BLACK
+            elif mask_blue[i][j] == 255:
+                res_img[i][j] = config.COLOR_BLUE 
+            else:
+                res_img[i][j] = config.COLOR_DARKGREEN 
+
+
+    #svm_params = dict( kernel_type = cv2.SVM_LINEAR, svm_type = cv2.SVM_C_SVC, C=2.67, gamma=5.383 )
+    #float_resize_img = np.empty((config.TRANSFORM_SIZE, config.TRANSFORM_SIZE,3), dtype=np.float32)
+    #float_resize_img[:] = resize_img[:]
+
+    #svm = cv2.SVM()
+    #svm.train(float_resize_img, res_img) 
+
+    #cv2.imshow("test", res_img)
+    #cv2.waitKey(0)
+
+
+    return res_img
+
+
+    
+
+# black
+# [0 - 180, 0-80, 0-50]
+# gray
+# [0 - 180, 0-80, 50-90]
+# white
+# [0 - 180, 0-80, 90-255]
 
 
 # blue:
@@ -66,13 +332,13 @@ def main(img, region):
 
 # black
 # [0 - 180, 0-80, 0-50]
-# grey
+# gray
 # [0 - 180, 0-80, 50-90]
 # white
 # [0 - 180, 0-80, 90-255]
 
 def compareResult(plate, mosaic, region):
-    p_size = config.PLATE_SIZE/2                                                
+    p_size = config.PLATE_SIZE                                                
     bricks = mosaic                        
     #print plate
     #print mosaic
@@ -125,27 +391,26 @@ def detectBricks(img):
             print ""
     return res_img
 
-def setBricks(plate_img):
-    p_size = config.PLATE_SIZE                                                
-    bricks = [[1]*p_size for x in range(p_size)]                                
+def setBricks(plate_img, p_size):
+    bricks = np.empty((p_size, p_size), dtype=np.int32)                              
                                                                                 
-    for i in range(0,config.PLATE_SIZE):                                                   
-        for j in range(0, config.PLATE_SIZE):                                              
+    for i in range(0, p_size):                                                   
+        for j in range(0, p_size):                                              
             if np.array_equal(plate_img[i][j], config.COLOR_BLUE[0][0]):   
-                bricks[i][j] = 7                                        
+                bricks[i][j] = 1
             elif np.array_equal(plate_img[i][j], config.COLOR_BLACK[0][0]):
                 bricks[i][j] = 2                                        
             elif np.array_equal(plate_img[i][j], config.COLOR_WHITE[0][0]):
                 bricks[i][j] = 3                                        
-            elif np.array_equal(plate_img[i][j], config.COLOR_GRAY[0][0]): 
+            elif np.array_equal(plate_img[i][j], config.COLOR_DARKGRAY[0][0]): 
                 bricks[i][j] = 5                                        
-            else:                                                           
+            elif np.array_equal(plate_img[i][j], config.COLOR_BROWN[0][0]): 
                 bricks[i][j] = 6                                        
     return bricks
 
 def getPlateRegion(plate_result, region):
 
-    p_size = config.PLATE_SIZE/2                                                
+    p_size = config.PLATE_SIZE                                                
     bricks = [[1]*p_size for x in range(p_size)]                                
                                                                                 
     if region_num == 0:                                                         
@@ -157,18 +422,15 @@ def getPlateRegion(plate_result, region):
                     bricks[i+2][j+2] = 2                                        
                 elif np.array_equal(plate_result[i][j], config.COLOR_WHITE[0][0]):
                     bricks[i+2][j+2] = 3                                        
-                elif np.array_equal(plate_result[i][j], config.COLOR_GRAY[0][0]): 
+                elif np.array_equal(plate_result[i][j], config.COLOR_DARKGRAY[0][0]): 
                     bricks[i+2][j+2] = 5                                        
                 else:                                                           
                     bricks[i+2][j+2] = 6                                        
     return bricks
-                                                                            
-
 
 def detectBricks_v2(img):
     colors_num = len(config.COLORS)
     rows, cols, channels = img.shape
-    panel = np.empty((rows,cols,colors_num))
 
     res_img = np.empty((config.PLATE_SIZE, config.PLATE_SIZE,3), dtype=np.uint8)
     #cv2.imwrite("detecBricks.jpeg",img)
@@ -178,36 +440,27 @@ def detectBricks_v2(img):
     upper_black = np.array([180,100,70], dtype=np.uint8)
     mask_black = cv2.inRange(hsv, lower_black, upper_black)
 
-    lower_grey = np.array([0,0,70], dtype=np.uint8)
-    upper_grey = np.array([180,100,130], dtype=np.uint8)
-    mask_grey = cv2.inRange(hsv, lower_grey, upper_grey)
+    lower_gray = np.array([0,0,70], dtype=np.uint8)
+    upper_gray = np.array([180,100,130], dtype=np.uint8)
+    mask_gray = cv2.inRange(hsv, lower_gray, upper_gray)
 
     lower_white = np.array([0,0,130], dtype=np.uint8)
     upper_white = np.array([180,100,255], dtype=np.uint8)
     mask_white = cv2.inRange(hsv, lower_white, upper_white)
 
     bricks = [[1]*config.PLATE_SIZE for x in range(config.PLATE_SIZE)]
-    mosaic_img = cv2.imread(config.MOSAIC_NAME)
 
 
     for i in range(0, config.PLATE_SIZE):
         for j in range(0, config.PLATE_SIZE):
             if mask_white[i][j] == 255:
                 res_img[i][j] = config.COLOR_WHITE
-            elif mask_grey[i][j] == 255:
-                res_img[i][j] = config.COLOR_GRAY
+            elif mask_gray[i][j] == 255:
+                res_img[i][j] = config.COLOR_DARKGRAY
             elif mask_black[i][j] == 255:
                 res_img[i][j] = config.COLOR_BLACK
             else:
                 res_img[i][j] = config.COLOR_BLUE 
-
-# black
-# [0 - 180, 0-80, 0-50]
-# grey
-# [0 - 180, 0-80, 50-90]
-# white
-# [0 - 180, 0-80, 90-255]
-
 
     return res_img
 
@@ -282,4 +535,4 @@ def delta_e_cie2000(color1, color2, Kl=1, Kc=1, Kh=1):
 
 if __name__ == "__main__":
     img = cv2.imread(sys.argv[1])
-    main(img, 0)
+    main(img)
