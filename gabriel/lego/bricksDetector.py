@@ -10,6 +10,7 @@ import debug
 import mosaicHandler
 import time
 from scipy.stats import itemfreq
+from tool import Timer
 
 if os.path.isdir("../gabriel") is True:
     sys.path.insert(0, "..")
@@ -17,22 +18,34 @@ if os.path.isdir("../gabriel") is True:
 def main(img):
     print '----- start ', sys.modules[__name__], '-----'
 
+    timer = Timer()
+
     #while(1):
     if config.DEBUG:
         e1 = cv2.getTickCount()
 
+
     cv2.namedWindow("Detected_Bricks_w/o_Resize")
 
+
     orig_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
 
     #resize_img = cv2.resize(orig_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE), interpolation=cv2.INTER_CUBIC)
     #resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
     #res_img = detectBricks_v2(resize_img)
+    timer.setStartTime()
+
     res_window_img = detectBricks_window(orig_img)
+
+    print "    --> bircks inrange time: " + str(timer.getTimer())
     #resize_window_img = cv2.resize(res_window_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE))
 
     #plate_bricks_window = setBricks(res_window_img, config.PLATE_SIZE*10)
+
+    timer.setStartTime()
     final_img = setColors(res_window_img)
+    print "    --> bircks colors group time: " + str(timer.getTimer())
 
     #if config.DEBUG:
     cv2.imshow("Transformed_Plate", img)
@@ -44,7 +57,9 @@ def main(img):
         #cv2.imshow("final", final_img)
 
 
+    timer.setStartTime()
     plate_bricks = setBricks(final_img, config.PLATE_SIZE)
+    print "    --> bircks mapping time: " + str(timer.getTimer())
     #mosaic_result = mosaicHandler.getRegion(0)
     #result_bricks = compareResult(plate_bricks, mosaic_result, 0)
 
@@ -268,31 +283,53 @@ def detectBricks_window(resize_img):
     hsv = resize_img
     #hsv = cv2.cvtColor(resize_img, cv2.COLOR_BGR2HSV)
 
+
+    timer = Timer()
+    timer.setStartTime()
     mask_dark_gray = cv2.inRange(hsv, lower_dark_gray, upper_dark_gray)
     mask_black = cv2.inRange(hsv, lower_black, upper_black)
     mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
     mask_brown2 = cv2.inRange(hsv, lower_brown2, upper_brown2)
     mask_white = cv2.inRange(hsv, lower_white, upper_white)
     mask_blue = cv2.inRange(hsv, config.LOWER_BLUE, config.UPPER_BLUE)
+    print "      -->  inrange time: " + str(timer.getTimer())
 
     #bricks = [[1]*config.TRANSFORM_SIZE for x in range(config.TRANSFORM_SIZE)]
 
-    for i in range(0, config.TRANSFORM_SIZE):
-        for j in range(0, config.TRANSFORM_SIZE):
-            if mask_blue[i][j] == 255:
-                res_img[i][j] = config.COLOR_BLUE 
-            elif mask_white[i][j] == 255:
-                res_img[i][j] = config.COLOR_WHITE
-            elif mask_dark_gray[i][j] == 255:
-                res_img[i][j] = config.COLOR_DARKGRAY
-            elif mask_brown[i][j] == 255:
-                res_img[i][j] = config.COLOR_BROWN
-            elif mask_brown2[i][j] == 255:
-                res_img[i][j] = config.COLOR_BROWN
-            elif mask_black[i][j] == 255:
-                res_img[i][j] = config.COLOR_BLACK
-            else:
-                res_img[i][j] = config.COLOR_DARKGREEN 
+    timer.setStartTime()
+    #print mask_blue.shape
+    #print res_img.shape
+    res_img[:] = config.COLOR_DARKGREEN
+    res_img[mask_blue == 255, :] = np.uint8([255,0,1])
+    res_img[mask_white == 255, :] = np.uint8([252,254,253])
+    res_img[mask_dark_gray == 255, :] = np.uint8([66,59,50])
+    res_img[mask_brown == 255, :] = np.uint8([35,39,88])
+    res_img[mask_brown2 == 255, :] = np.uint8([35,39,88])
+    res_img[mask_black == 255, :] = np.uint8([18,9,5])
+#COLOR_BLACK = np.uint8([[[18,9,5]]])     
+#COLOR_WHITE = np.uint8([[[252,254,253]]])
+#COLOR_BROWN = np.uint8([[[35,39,88]]])   
+#COLOR_BLUE = np.uint8([[[255,0,1]]])     
+#COLOR_DARKGRAY = np.uint8([[[66,59,50]]])
+#COLOR_DARKGREEN = np.uint8([[[2,100,3]]])
+#COLOR_UNSURE = np.uint8([[[99,98,97]]])  
+    #for i in range(0, config.TRANSFORM_SIZE):
+    #    for j in range(0, config.TRANSFORM_SIZE):
+    #        if mask_blue[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_BLUE 
+    #        elif mask_white[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_WHITE
+    #        elif mask_dark_gray[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_DARKGRAY
+    #        elif mask_brown[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_BROWN
+    #        elif mask_brown2[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_BROWN
+    #        elif mask_black[i][j] == 255:
+    #            res_img[i][j] = config.COLOR_BLACK
+    #        else:
+    #            res_img[i][j] = config.COLOR_DARKGREEN 
+    print "      -->  assign value time: " + str(timer.getTimer())
 
 
     #svm_params = dict( kernel_type = cv2.SVM_LINEAR, svm_type = cv2.SVM_C_SVC, C=2.67, gamma=5.383 )

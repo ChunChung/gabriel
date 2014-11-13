@@ -21,6 +21,10 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     # block size, larger can detect smaller block 
     hough_min_len_w = 12
     hough_max_gap = 10
+
+    if config.DEBUG == 2:
+    	cv2.namedWindow('PT: convex hull')
+
     if config.DEBUG == 1:
     	cv2.namedWindow('PT: convex hull')
     	cv2.createTrackbar('arc_len_w','PT: convex hull', arc_len_w, 100, nothing)
@@ -160,6 +164,8 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
         #    debug.imshow('PT: original image', img) 
         #    debug.imshow('PT: plate mask', plate_mask)
             debug.imshow('PT: transformed', dst)
+    if config.DEBUG == 2:
+        debug.imshow('PT: four corners', edges)
 	return dst
     
     
