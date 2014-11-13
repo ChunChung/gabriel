@@ -230,7 +230,7 @@ class ResultForwardingClient(threading.Thread):
                     (prev_sent_data == result_str):
                 prev_sent_time = self.previous_sent_time_dict.get(engine_name, 0)
                 time_diff = time.time() - prev_sent_time
-                if time_diff < 2:
+                if time_diff < 60:
                     LOG.info("Identical result (%s) is ignored" % result_str)
                     return_json.pop(Protocol_client.RESULT_MESSAGE_KEY, None)
 
