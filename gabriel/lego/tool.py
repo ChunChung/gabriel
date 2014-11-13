@@ -1,6 +1,17 @@
 import cv2
 import math
 import numpy as np
+
+class Timer:
+    def __init__(self):
+        pass
+    def setStartTime(self):
+        self.e1 = cv2.getTickCount()
+
+    def getTimer(self):
+        self.e2 = cv2.getTickCount()
+        return (self.e2 - self.e1)/ cv2.getTickFrequency()
+
 def get_corner_pts(bw, perimeter = None, center = None, method = 'line'):
     '''
     Given an input image @bw where the borders of a rough rectangle are

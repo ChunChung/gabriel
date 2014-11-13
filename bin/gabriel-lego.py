@@ -40,8 +40,8 @@ from gabriel.lego import plateMaskDetector
 from gabriel.lego import config
 from gabriel.lego import mosaicHandler
 from gabriel.lego import InstRender
-from gabriel.lego import InstRender
 from gabriel.lego import task1
+from gabriel.lego import tool
 
 
 import Image
@@ -53,12 +53,13 @@ import numpy as np
 class DummyVideoApp(AppProxyThread):
     def __init__(self, video_frame_queue, result_queue):
         AppProxyThread.__init__(self, video_frame_queue, result_queue)
+        self.timer = tool.Timer()
 
 
 
     def handle(self, header, data):
-        #print "start:" + str(time.time())
-
+        print "====== start lego ======" 
+        self.timer.setStartTime()
         if 'stream_type' in header and header['stream_type'] == 3 and not hasattr(self, 'ir'):
             self.ir = InstRender.InstRender(task1.task)
             results = self.ir.start(config.REGIONS[0])
@@ -68,34 +69,24 @@ class DummyVideoApp(AppProxyThread):
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-
-
         # Generate mosaic
         if 'stream_type' in header and header['stream_type'] == 1: 
-            if os.path.isfile(config.MOSAIC_NAME):
-                os.remove(config.MOSAIC_NAME)
-                print "Reset " + config.MOSAIC_NAME + " file"
-            cv2.imwrite('test.bmp', frame)
-            result_msg = mosaicHandler.main(frame)
-            region_num = 0
-            region = config.REGIONS[region_num]
-            action = config.ACTIONS[0]
-            bricks = mosaicHandler.getMosaic()
-            #results = {"action": action, "bricks": {"status":bricks, "region": region}, "voice": "let's start at left top of the plat"}
-            #TODO: pass mosaic 18x18 numpy array into InstRender constructor
-	    #self.m = np.empty((18, 18), dtype=np.int32)
-    	#    self.m.fill(config.BLUE)
-    	#    for i in range(2, 16):
-        #	for j in range(2, 16):
-        #    	    self.m[i, j] = j % 5 + 2
-            self.ir = InstRender.InstRender(bricks)
+            if hasattr(self, 'mosaic'):
+                self.mosaic = None
+            self.mosaic = mosaicHandler.main(frame)
+            self.ir = InstRender.InstRender(self.mosaic)
             results = self.ir.start(config.REGIONS[0])
             results.update({'id': str(header['id']).zfill(5)})
+            print '  --> processing time: ', self.timer.getTimer()
             return results
 
+        if 'type' in header and header['type'] == 'emulated' and not hasattr(self, 'ir'):
+            self.mosaic = mosaicHandler.main(frame)
+            self.ir = InstRender.InstRender(self.mosaic)
+            self.ir.start(config.REGIONS[0])
 
+        print "  -> set mask"
 
-        e1 = cv2.getTickCount()
         debug.imshow('frame', frame)
 
         # create trackbars for color change
@@ -116,57 +107,42 @@ class DummyVideoApp(AppProxyThread):
         higher_s = cv2.getTrackbarPos('higher_s', 'frame')
         higher_v = cv2.getTrackbarPos('higher_v', 'frame')
 
-        #lower_h = 100
-        #lower_s = 90
-        #lower_v = 0
-
-        #higher_h = 140
-        #higher_s = 255
-        #higher_v = 255
-
         mask = plateMaskDetector.main(frame, np.array([lower_h, lower_s, lower_v], dtype=np.uint8), np.array([higher_h, higher_s, higher_v], dtype=np.uint8))
 
         # Bitwise-AND mask and original image
         res = cv2.bitwise_and(frame,frame, mask= mask)
 
-
-        debug.imshow('mask', mask)
-        debug.imshow('res', res)
-
-
+        print "  -> perspectiveTransform"
         lego_img = perspectiveTransform.perspective_transform(frame, mask)
 
-        #if config.RECORD == 1:
-        #    results = self.ir.start(config.REGIONS[0])
-        #    filename = "./test_images12/frame-" + str(header['id']).zfill(5) + ".jpeg"
-        #    cv2.imwrite(filename, frame)
-        #    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #    return results
+
+        if config.RECORD == 1:
+            results = self.ir.start(config.REGIONS[0])
+            filename = "./test_images12/frame-" + str(header['id']).zfill(5) + ".jpeg"
+            cv2.imwrite(filename, frame)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            print '  -> processing time: ', self.timer.getTimer()
+            return results
 
         if lego_img is not None:
             #TODO: detect bricks
-            cv2.imwrite("compare.jpg", frame)
             region_num = 0
+            print "  -> bricksDetect"
             bricks = bricksDetector.main(lego_img)
-            region = config.REGIONS[region_num]
-            action = config.ACTIONS[1]
 
             if hasattr(self, 'ir'):
                 results = self.ir.update(bricks)
             else:
-                mosaic_bricks = mosaicHandler.getMosaic()
-                self.ir = InstRender.InstRender(mosaic_bricks)
+                #mosaic_bricks = mosaicHandler.getMosaic()
+                self.ir = InstRender.InstRender(self.mosaic)
                 self.ir.start(config.REGIONS[0])
                 results = self.ir.update(bricks)
-            results.update({'id': str(header['id']).zfill(5)})
-	    return results
+            #results.update({'id': str(header['id']).zfill(5)})
+            print '  -> processing time: ', self.timer.getTimer()
+            return results
 	
-        #Performance Measurement 	
-        e2 = cv2.getTickCount()
-        time = (e2 - e1)/ cv2.getTickFrequency()
-        print 'processing time: ', time
-
         #return "ID :"+ str(header['id']).zfill(5) +" No suitable result" 
+        print '  -> processing time: ', self.timer.getTimer()
         return "No suitable result" 
 
 

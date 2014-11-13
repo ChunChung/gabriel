@@ -18,21 +18,17 @@ local_debug = 0
 def main(img):
     if config.DEBUG:
         e1 = cv2.getTickCount()
-        print "start mosaic image handler"
+        print "    -> Start mosaic image handler"
 
-    if not os.path.isfile(config.MOSAIC_NAME):
-        mosaic = generateMosaic(img)
-        cv2.imwrite(config.MOSAIC_NAME, mosaic)
+    mosaic = generateMosaic(img)
+    mosaic_result = getMosaic(mosaic)
 
     if config.DEBUG:
+        debug.imshow('Mosaic', mosaic)
         e2 = cv2.getTickCount()
         time = (e2 - e1)/ cv2.getTickFrequency()
-        print 'processing time: ', time
-        print '=============================='
-    return 
-
-def getMosaicZone():
-    return 1
+        print '    -> Mosaic processing time: ', time
+    return mosaic_result
 
 def getMosaic(mosaic_img=None):
     #1: incomplete, expect empty(blue)
@@ -73,19 +69,11 @@ def generateMosaic(img):
 
     resize_img = cv2.resize(img, dsize=(config.MOSAIC_SIZE, config.MOSAIC_SIZE), interpolation=cv2.INTER_CUBIC)
     resize_img_gray = cv2.resize(orig_img_gray, dsize=(config.MOSAIC_SIZE, config.MOSAIC_SIZE), interpolation=cv2.INTER_CUBIC)
-    #resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
-
-    #bricks_mosaic_img = bricksDetector.detectBricks(resize_img)
     gray_mosaic_img = grayMosaic(resize_img_gray)
-    #result_img = combineMosaic(gray_mosaic_img, bricks_mosaic_img)
 
     if local_debug == 1:
         cv2.imshow('Mosaic_Orig', orig_img)
         cv2.imshow("gray", gray_mosaic_img)
-        #cv2.imshow("bricks", bricks_mosaic_img)
-        #cv2.imshow("resize", resize_img)
-        #cv2.imshow("resize_gray", resize_img_gray)
-        #cv2.imshow("Mosaic_Result", result_img)
         cv2.waitKey(0)
 
     return gray_mosaic_img
