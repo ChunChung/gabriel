@@ -78,6 +78,7 @@ class DummyVideoApp(AppProxyThread):
             results = self.ir.start(config.REGIONS[0])
             results.update({'id': str(header['id']).zfill(5)})
             print '  --> processing time: ', self.timer.getTimer()
+            results.update({'id': str(header['id']).zfill(5)})
             return results
 
         if 'type' in header and header['type'] == 'emulated' and not hasattr(self, 'ir'):
@@ -122,6 +123,7 @@ class DummyVideoApp(AppProxyThread):
             cv2.imwrite(filename, frame)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             print '  -> processing time: ', self.timer.getTimer()
+            results.update({'id': str(header['id']).zfill(5)})
             return results
 
         if lego_img is not None:
@@ -137,13 +139,13 @@ class DummyVideoApp(AppProxyThread):
                 self.ir = InstRender.InstRender(self.mosaic)
                 self.ir.start(config.REGIONS[0])
                 results = self.ir.update(bricks)
-            #results.update({'id': str(header['id']).zfill(5)})
+                results.update({'id': str(header['id']).zfill(5)})
             print '  -> processing time: ', self.timer.getTimer()
             return results
 	
-        #return "ID :"+ str(header['id']).zfill(5) +" No suitable result" 
         print '  -> processing time: ', self.timer.getTimer()
-        return "No suitable result" 
+        return "ID :"+ str(header['id']).zfill(5) +" No suitable result" 
+        #return "No suitable result" 
 
 
 if __name__ == "__main__":

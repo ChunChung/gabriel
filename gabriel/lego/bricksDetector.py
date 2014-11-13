@@ -25,26 +25,22 @@ def main(img):
 
     orig_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-
-
     #resize_img = cv2.resize(orig_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE), interpolation=cv2.INTER_CUBIC)
     #resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
-
     #res_img = detectBricks_v2(resize_img)
     res_window_img = detectBricks_window(orig_img)
     #resize_window_img = cv2.resize(res_window_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE))
 
     #plate_bricks_window = setBricks(res_window_img, config.PLATE_SIZE*10)
-
     final_img = setColors(res_window_img)
 
-    if config.DEBUG:
-        cv2.imshow("Transformed_Plate", img)
+    #if config.DEBUG:
+    cv2.imshow("Transformed_Plate", img)
         #enlargeImg = showEnlargeImg(res_img, 10)
         #cv2.imshow("Detected_Bricks", enlargeImg)
-        cv2.imshow("Detected_Bricks_w/o_Resize", res_window_img)
+    cv2.imshow("Detected_Bricks_w/o_Resize", res_window_img)
         #cv2.imshow("Detected_Bricks_w/o_Resize_Window", showEnlargeImg(resize_window_img, 10))
-        cv2.imshow("Detected_Bricks_final", showEnlargeImg(final_img, 10))
+    cv2.imshow("Detected_Bricks_final", showEnlargeImg(final_img, 10))
         #cv2.imshow("final", final_img)
 
 
@@ -173,7 +169,6 @@ def detectBricks_window(resize_img):
     colors_num = len(config.COLORS)
     rows, cols, channels = resize_img.shape
 
-
     # Default Value
     lower_black = config.LOWER_BLACK
     upper_black = config.UPPER_BLACK
@@ -190,7 +185,7 @@ def detectBricks_window(resize_img):
     lower_white = config.LOWER_WHITE
     upper_white = config.UPPER_WHITE
 
-    if config.DEBUG == 1:
+    if config.DEBUG == 2:
         cv2.createTrackbar('b_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[0],180,nothing)
         cv2.createTrackbar('b_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[1],255,nothing)
         cv2.createTrackbar('b_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[2],255,nothing)
@@ -284,7 +279,9 @@ def detectBricks_window(resize_img):
 
     for i in range(0, config.TRANSFORM_SIZE):
         for j in range(0, config.TRANSFORM_SIZE):
-            if mask_white[i][j] == 255:
+            if mask_blue[i][j] == 255:
+                res_img[i][j] = config.COLOR_BLUE 
+            elif mask_white[i][j] == 255:
                 res_img[i][j] = config.COLOR_WHITE
             elif mask_dark_gray[i][j] == 255:
                 res_img[i][j] = config.COLOR_DARKGRAY
@@ -294,8 +291,6 @@ def detectBricks_window(resize_img):
                 res_img[i][j] = config.COLOR_BROWN
             elif mask_black[i][j] == 255:
                 res_img[i][j] = config.COLOR_BLACK
-            elif mask_blue[i][j] == 255:
-                res_img[i][j] = config.COLOR_BLUE 
             else:
                 res_img[i][j] = config.COLOR_DARKGREEN 
 

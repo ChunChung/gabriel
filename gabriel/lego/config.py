@@ -1,7 +1,7 @@
 import numpy as np
 # DEBUG 1: on 
 #       2: off
-DEBUG = 0
+DEBUG = 2
 RECORD = 0
 
 # Our detects color base on BGR model
@@ -43,7 +43,7 @@ TRANSFORM_SIZE = 320
 LOWER_BLACK = np.array([0, 0, 0], dtype=np.uint8)        
 UPPER_BLACK = np.array([180, 255, 50], dtype=np.uint8)     
                                                                                  
-LOWER_DARK_GRAY = np.array([80, 30, 45], dtype=np.uint8)      
+LOWER_DARK_GRAY = np.array([0, 0, 45], dtype=np.uint8)      
 UPPER_DARK_GRAY = np.array([120, 130, 100], dtype=np.uint8)   
                                                                                  
 LOWER_BROWN = np.array([0, 0, 40], dtype=np.uint8)     
@@ -52,8 +52,8 @@ UPPER_BROWN = np.array([40, 160, 120], dtype=np.uint8)
 LOWER_BROWN2 = np.array([130, 60, 40], dtype=np.uint8)                           
 UPPER_BROWN2 = np.array([180, 110, 60], dtype=np.uint8)                          
                                                                                  
-LOWER_WHITE = np.array([0, 0, 120], dtype=np.uint8)        
-UPPER_WHITE = np.array([180, 45, 255], dtype=np.uint8)     
+LOWER_WHITE = np.array([0, 0, 90], dtype=np.uint8)        
+UPPER_WHITE = np.array([180, 60, 255], dtype=np.uint8)     
 
 LOWER_BLUE = np.array([100, 90, 45], dtype=np.uint8)        
 UPPER_BLUE = np.array([140, 255, 255], dtype=np.uint8)     
