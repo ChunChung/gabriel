@@ -68,10 +68,7 @@ class DummyVideoApp(AppProxyThread):
         frame = np.array(imagere)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        if config.RECORD == 1:
-            filename = "./test_images8/frame-" + str(header['id']).zfill(5) + ".jpeg"
-            cv2.imwrite(filename, frame)
-            return "some messages"
+
 
         # Generate mosaic
         if 'stream_type' in header and header['stream_type'] == 1: 
@@ -93,6 +90,7 @@ class DummyVideoApp(AppProxyThread):
         #    	    self.m[i, j] = j % 5 + 2
             self.ir = InstRender.InstRender(bricks)
             results = self.ir.start(config.REGIONS[0])
+            results.update({'id': str(header['id']).zfill(5)})
             return results
 
 
@@ -138,6 +136,13 @@ class DummyVideoApp(AppProxyThread):
 
         lego_img = perspectiveTransform.perspective_transform(frame, mask)
 
+        #if config.RECORD == 1:
+        #    results = self.ir.start(config.REGIONS[0])
+        #    filename = "./test_images12/frame-" + str(header['id']).zfill(5) + ".jpeg"
+        #    cv2.imwrite(filename, frame)
+        #    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #    return results
+
         if lego_img is not None:
             #TODO: detect bricks
             cv2.imwrite("compare.jpg", frame)
@@ -153,6 +158,7 @@ class DummyVideoApp(AppProxyThread):
                 self.ir = InstRender.InstRender(mosaic_bricks)
                 self.ir.start(config.REGIONS[0])
                 results = self.ir.update(bricks)
+            results.update({'id': str(header['id']).zfill(5)})
 	    return results
 	
         #Performance Measurement 	
@@ -160,7 +166,8 @@ class DummyVideoApp(AppProxyThread):
         time = (e2 - e1)/ cv2.getTickFrequency()
         print 'processing time: ', time
 
-        return "some message"
+        #return "ID :"+ str(header['id']).zfill(5) +" No suitable result" 
+        return "No suitable result" 
 
 
 if __name__ == "__main__":

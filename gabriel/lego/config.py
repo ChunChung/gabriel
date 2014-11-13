@@ -1,7 +1,7 @@
 import numpy as np
 # DEBUG 1: on 
 #       2: off
-DEBUG = 1
+DEBUG = 0
 RECORD = 0
 
 # Our detects color base on BGR model

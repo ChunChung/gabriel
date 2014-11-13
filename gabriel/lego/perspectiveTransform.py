@@ -16,8 +16,10 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
     
 
     arc_len_w = 5
-    hough_th_w = 4
-    hough_min_len_w = 8
+    # th larger, recongnize as a straight
+    hough_th_w = 6
+    # block size, larger can detect smaller block 
+    hough_min_len_w = 12
     hough_max_gap = 10
     if config.DEBUG == 1:
     	cv2.namedWindow('PT: convex hull')
