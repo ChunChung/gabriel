@@ -4,8 +4,10 @@ import numpy as np
 import config
 import voice as vc
 import task1
+import time
 
 class InstRender:
+    COOLDOWN = 3
     SIZE = 20
     SEC_SIZE = (SIZE - 2) * 2
     TOTAL_BRICKS = (SIZE-2) * (SIZE-2)
@@ -16,6 +18,7 @@ class InstRender:
 	assert (mosaic.shape[0] == self.SIZE and mosaic.shape[1] == self.SIZE), "mosaic size should be 32x32"
 	# mosaic image
 	self.mosaic = mosaic
+	self.last_time = time.time()
 	
     def start(self, region):
 	#set current region
@@ -87,6 +90,10 @@ class InstRender:
 	# skip if state unchanged
 	#if np.array_equal(detects, self.prev_detects):
 	#    return ""
+	now_time = time.time()
+	if (now_time - self.last_time) <= self.COOLDOWN:
+	    return ""
+	self.last_time = now_time
 	# detect only the detectable bricks on current region
 	colors, status = self.compare(detects)
 	#print "prev:", self.prev_status.tolist()
@@ -126,8 +133,6 @@ class InstRender:
 	assert (detects.shape[0] == self.SIZE and detects.shape[1] == self.SIZE), "length is not 16x16"
 	colors = np.empty((self.SIZE,self.SIZE), dtype=np.int32)
 	status = np.empty((self.SIZE,self.SIZE), dtype=np.int32)
-	print "bricks=", self.bricks.tolist()
-	print "detects=", detects.tolist()
 	for i in range(self.SIZE):
 	    for j in range(self.SIZE):
 		colors[i,j] = self.bricks[i,j]
