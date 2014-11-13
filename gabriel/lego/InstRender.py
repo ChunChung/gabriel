@@ -105,6 +105,7 @@ class InstRender:
 	    # TODO: start new region if no more new bricks
 	    self.addNewBricks2(detects)
 	    colors, status = self.compare(detects) # update status after add new bricks
+	    self.prev_status[:] = status[:]
 	    if any(4 in row2 for row2 in status):
 		voice = vc.NEW_BRICKS_ERROR_ON_BLUE
 	    else:
@@ -125,12 +126,14 @@ class InstRender:
 	assert (detects.shape[0] == self.SIZE and detects.shape[1] == self.SIZE), "length is not 16x16"
 	colors = np.empty((self.SIZE,self.SIZE), dtype=np.int32)
 	status = np.empty((self.SIZE,self.SIZE), dtype=np.int32)
+	print "bricks=", self.bricks.tolist()
+	print "detects=", detects.tolist()
 	for i in range(self.SIZE):
 	    for j in range(self.SIZE):
 		colors[i,j] = self.bricks[i,j]
 		if self.bricks[i,j] == config.BLUE:
 		    if detects[i,j] == config.BLUE:
-			status[i,j] = 1 
+			status[i,j] = 5 # fix blue 
 		    else: 
 			status[i,j] = 4 # error if bricks on BLUE region
 		else:
@@ -211,7 +214,7 @@ if __name__ == '__main__':
 
     print "--- detect new bricks with error on blue ---"
     for i in range(16, 18):
-        for j in range(2, 18):
+        for j in range(2, 10):
             d[i, j] = m[i, j]
     print ir.update(d)
     
