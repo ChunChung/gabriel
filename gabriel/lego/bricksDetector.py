@@ -18,7 +18,7 @@ if os.path.isdir("../gabriel") is True:
 def main(img):
     print '----- start ', sys.modules[__name__], '-----'
 
-    timer = Timer()
+    #timer = Timer()
 
     #while(1):
     if config.DEBUG:
@@ -34,18 +34,32 @@ def main(img):
     #resize_img = cv2.resize(orig_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE), interpolation=cv2.INTER_CUBIC)
     #resize_img = cv2.cvtColor(resize_img, cv2.COLOR_HSV2BGR)
     #res_img = detectBricks_v2(resize_img)
-    timer.setStartTime()
+    #timer.setStartTime()
 
     res_window_img = detectBricks_window(orig_img)
 
-    print "    --> bircks inrange time: " + str(timer.getTimer())
+    res_window_img_lines = np.empty((config.TRANSFORM_SIZE, config.TRANSFORM_SIZE,3), dtype=np.uint8)
+    res_window_img_lines[:] = res_window_img
+
+    for i in xrange(0,20):
+        res_window_img_lines[i*16,:,:] = np.uint8([0,0,255])
+        res_window_img_lines[:,i*16,:] = np.uint8([0,0,255])
+    cv2.imshow("res_window", res_window_img_lines)
+    #res_window_img_lines
+
+
+    #np.uint8([255,0,1])
+
+    print "    --> bircks inrange time: " 
+    #+ str(timer.getTimer())
     #resize_window_img = cv2.resize(res_window_img, dsize=(config.PLATE_SIZE,config.PLATE_SIZE))
 
     #plate_bricks_window = setBricks(res_window_img, config.PLATE_SIZE*10)
 
-    timer.setStartTime()
+    #timer.setStartTime()
     final_img = setColors(res_window_img)
-    print "    --> bircks colors group time: " + str(timer.getTimer())
+    print "    --> bircks colors group time: " 
+    #+ str(timer.getTimer())
 
     #if config.DEBUG:
     cv2.imshow("Transformed_Plate", img)
@@ -57,14 +71,16 @@ def main(img):
         #cv2.imshow("final", final_img)
 
 
-    timer.setStartTime()
+    #timer.setStartTime()
     plate_bricks = setBricks(final_img, config.PLATE_SIZE)
-    print "    --> bircks mapping time: " + str(timer.getTimer())
+    print "    --> bircks mapping time: " 
+    #+ str(timer.getTimer())
     #mosaic_result = mosaicHandler.getRegion(0)
     #result_bricks = compareResult(plate_bricks, mosaic_result, 0)
 
 
 
+    cv2.waitKey(0)
     return plate_bricks
 
 def setColors(input_img):
@@ -188,6 +204,9 @@ def detectBricks_window(resize_img):
     lower_black = config.LOWER_BLACK
     upper_black = config.UPPER_BLACK
 
+    lower_black2 = config.LOWER_BLACK2
+    upper_black2 = config.UPPER_BLACK2
+
     lower_dark_gray = config.LOWER_DARK_GRAY
     upper_dark_gray = config.UPPER_DARK_GRAY
 
@@ -200,7 +219,8 @@ def detectBricks_window(resize_img):
     lower_white = config.LOWER_WHITE
     upper_white = config.UPPER_WHITE
 
-    if config.DEBUG == 2:
+
+    if config.DEBUG == 1:
         cv2.createTrackbar('b_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[0],180,nothing)
         cv2.createTrackbar('b_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[1],255,nothing)
         cv2.createTrackbar('b_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[2],255,nothing)
@@ -288,10 +308,13 @@ def detectBricks_window(resize_img):
     timer.setStartTime()
     mask_dark_gray = cv2.inRange(hsv, lower_dark_gray, upper_dark_gray)
     mask_black = cv2.inRange(hsv, lower_black, upper_black)
+    mask_black2 = cv2.inRange(hsv, lower_black2, upper_black2)
     mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
     mask_brown2 = cv2.inRange(hsv, lower_brown2, upper_brown2)
     mask_white = cv2.inRange(hsv, lower_white, upper_white)
     mask_blue = cv2.inRange(hsv, config.LOWER_BLUE, config.UPPER_BLUE)
+
+    mask_black_all = np.bitwise_or(mask_black, mask_black2)
     print "      -->  inrange time: " + str(timer.getTimer())
 
     #bricks = [[1]*config.TRANSFORM_SIZE for x in range(config.TRANSFORM_SIZE)]
@@ -305,7 +328,8 @@ def detectBricks_window(resize_img):
     res_img[mask_dark_gray == 255, :] = np.uint8([66,59,50])
     res_img[mask_brown == 255, :] = np.uint8([35,39,88])
     res_img[mask_brown2 == 255, :] = np.uint8([35,39,88])
-    res_img[mask_black == 255, :] = np.uint8([18,9,5])
+    res_img[mask_black_all == 255, :] = np.uint8([18,9,5])
+
 #COLOR_BLACK = np.uint8([[[18,9,5]]])     
 #COLOR_WHITE = np.uint8([[[252,254,253]]])
 #COLOR_BROWN = np.uint8([[[35,39,88]]])   
