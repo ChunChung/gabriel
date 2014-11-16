@@ -80,7 +80,7 @@ def main(img):
 
 
 
-    cv2.waitKey(0)
+    #cv2.waitKey(0)
     return plate_bricks
 
 def setColors(input_img):
