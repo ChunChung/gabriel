@@ -80,7 +80,7 @@ class InstRender:
 	    y = 17 - (sec * 2) - (run % 2)
 	    #print "(", x, y, ")"
 	    self.bricks[y, x] = self.mosaic[y, x]
-	    if self.bricks[y, x] != config.BLUE and self.bricks[y, x] != detects[y, x]: # TODO: skip detect correct
+	    if self.bricks[y, x] != config.BLUE:# and self.bricks[y, x] != detects[y, x]: # TODO: skip detect correct
                 added += 1
     	    self.pin += 1
 
