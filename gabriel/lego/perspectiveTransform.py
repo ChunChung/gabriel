@@ -166,7 +166,7 @@ def perspective_transform(img, plate_mask): #return perspective transform versio
             debug.imshow('PT: transformed', dst)
     if config.DEBUG == 2:
         debug.imshow('PT: four corners', edges)
-	return dst
+    return dst
     
     
 def is_line_seg_close(line1, line2):
