@@ -41,24 +41,48 @@ PLATE_SIZE = 20
 TRANSFORM_SIZE = 320
 
 LOWER_BLACK = np.array([0, 0, 0], dtype=np.uint8)        
-UPPER_BLACK = np.array([180, 80, 50], dtype=np.uint8)     
+UPPER_BLACK = np.array([180, 60, 50], dtype=np.uint8)     
                                                                                  
 LOWER_BLACK2 = np.array([0, 0, 0], dtype=np.uint8)        
 UPPER_BLACK2 = np.array([180, 130, 30], dtype=np.uint8)     
 
-LOWER_DARK_GRAY = np.array([0, 0, 45], dtype=np.uint8)      
-UPPER_DARK_GRAY = np.array([120, 130, 100], dtype=np.uint8)   
-                                                                                 
-LOWER_WHITE = np.array([0, 0, 90], dtype=np.uint8)        
-UPPER_WHITE = np.array([180, 60, 255], dtype=np.uint8)     
+LOWER_BLACK3 = np.array([90, 100, 0], dtype=np.uint8)        
+UPPER_BLACK3 = np.array([140, 255, 40], dtype=np.uint8)     
 
-LOWER_BLUE = np.array([100, 90, 45], dtype=np.uint8)        
+LOWER_BLACK4 = np.array([90, 0, 80], dtype=np.uint8)        
+UPPER_BLACK4 = np.array([140, 40, 150], dtype=np.uint8)     
+
+LOWER_DARK_GRAY = np.array([0, 0, 40], dtype=np.uint8)      
+UPPER_DARK_GRAY = np.array([90, 130, 100], dtype=np.uint8)   
+                                                                                 
+LOWER_DARK_GRAY2 = np.array([90, 0, 0], dtype=np.uint8)      
+UPPER_DARK_GRAY2 = np.array([140, 130, 90], dtype=np.uint8)   
+
+LOWER_DARK_GRAY3 = np.array([140, 0, 40], dtype=np.uint8)      
+UPPER_DARK_GRAY3 = np.array([180, 130, 100], dtype=np.uint8)   
+
+LOWER_DARK_GRAY4 = np.array([0, 0, 0], dtype=np.uint8)      
+UPPER_DARK_GRAY4 = np.array([180, 40, 50], dtype=np.uint8)   
+
+LOWER_WHITE = np.array([0, 0, 120], dtype=np.uint8)        
+UPPER_WHITE = np.array([100, 80, 255], dtype=np.uint8)     
+
+LOWER_WHITE2 = np.array([100, 0, 160], dtype=np.uint8)        
+UPPER_WHITE2 = np.array([140, 70, 255], dtype=np.uint8)     
+
+LOWER_WHITE3 = np.array([140, 0, 120], dtype=np.uint8)        
+UPPER_WHITE3 = np.array([180, 60, 255], dtype=np.uint8)     
+
+LOWER_BLUE = np.array([100, 80, 40], dtype=np.uint8)        
 UPPER_BLUE = np.array([140, 255, 255], dtype=np.uint8)     
 
+LOWER_BLUE2 = np.array([100, 0, 0], dtype=np.uint8)        
+UPPER_BLUE2 = np.array([140, 255, 255], dtype=np.uint8)     
+
 LOWER_BROWN = np.array([0, 50, 40], dtype=np.uint8)     
-UPPER_BROWN = np.array([40, 255, 120], dtype=np.uint8)  
+UPPER_BROWN = np.array([30, 255, 120], dtype=np.uint8)  
                                                                                  
-LOWER_BROWN2 = np.array([130, 50, 40], dtype=np.uint8)                           
+LOWER_BROWN2 = np.array([150, 50, 40], dtype=np.uint8)                           
 UPPER_BROWN2 = np.array([180, 255, 120], dtype=np.uint8)                          
                                                                                  
 THRESHOLD = 60

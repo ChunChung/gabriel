@@ -62,6 +62,10 @@ def main(img):
     #+ str(timer.getTimer())
 
     #if config.DEBUG:
+
+    for i in xrange(0,20):
+        img[i*16,:,:] = np.uint8([0,0,255])
+        img[:,i*16,:] = np.uint8([0,0,255])
     cv2.imshow("Transformed_Plate", img)
         #enlargeImg = showEnlargeImg(res_img, 10)
         #cv2.imshow("Detected_Bricks", enlargeImg)
@@ -80,7 +84,7 @@ def main(img):
 
 
 
-    #cv2.waitKey(0)
+    cv2.waitKey(0)
     return plate_bricks
 
 def setColors(input_img):
@@ -124,7 +128,7 @@ def setColors(input_img):
 
             #print colorScore[max_idx][0], max_value
 
-            if max_idx != -1 and max_value > 60:
+            if max_idx != -1 and max_value > 70:
                 if colorScore[max_idx][0] == 18 or colorScore[max_idx][0] == 9 or colorScore[max_idx][0] == 5:
                     res_img[i][j] = config.COLOR_BLACK
                 elif colorScore[max_idx][0] == 252 or colorScore[max_idx][0] == 254 or colorScore[max_idx][0] == 253:
@@ -135,6 +139,11 @@ def setColors(input_img):
                     res_img[i][j] = config.COLOR_DARKGRAY
                 else:
                     res_img[i][j] = config.COLOR_BLUE
+            #elif max_idx != -1 and max_value > 50:
+            #    if colorScore[max_idx][0] == 66 or colorScore[max_idx][0] == 59 or colorScore[max_idx][0] == 50:
+            #        res_img[i][j] = config.COLOR_DARKGRAY
+            #    else:
+            #        res_img[i][j] = config.COLOR_BLUE
             else:
                 res_img[i][j] = config.COLOR_BLUE
 
@@ -168,6 +177,10 @@ def setColors(input_img):
             #                res_img[i][j] = config.COLOR_BLUE
             #else:
             #    res_img[i][j] = config.COLOR_BLUE
+    res_img[0:2,:] = np.uint8([255,0,1])
+    res_img[:,0:2] = np.uint8([255,0,1])
+    res_img[18:20,:] = np.uint8([255,0,1])
+    res_img[:,18:20] = np.uint8([255,0,1])
     return res_img
 
 def showEnlargeImg(res_img, times):
@@ -220,7 +233,7 @@ def detectBricks_window(resize_img):
     upper_white = config.UPPER_WHITE
 
 
-    if config.DEBUG == 1:
+    if config.DEBUG == 4:
         cv2.createTrackbar('b_lower_h','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[0],180,nothing)
         cv2.createTrackbar('b_lower_s','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[1],255,nothing)
         cv2.createTrackbar('b_lower_v','Detected_Bricks_w/o_Resize',config.LOWER_BLACK[2],255,nothing)
@@ -306,15 +319,33 @@ def detectBricks_window(resize_img):
 
     timer = Timer()
     timer.setStartTime()
-    mask_dark_gray = cv2.inRange(hsv, lower_dark_gray, upper_dark_gray)
-    mask_black = cv2.inRange(hsv, lower_black, upper_black)
-    mask_black2 = cv2.inRange(hsv, lower_black2, upper_black2)
     mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
     mask_brown2 = cv2.inRange(hsv, lower_brown2, upper_brown2)
-    mask_white = cv2.inRange(hsv, lower_white, upper_white)
-    mask_blue = cv2.inRange(hsv, config.LOWER_BLUE, config.UPPER_BLUE)
 
+    mask_blue = cv2.inRange(hsv, config.LOWER_BLUE, config.UPPER_BLUE)
+    mask_blue2 = cv2.inRange(hsv, config.LOWER_BLUE2, config.UPPER_BLUE2)
+
+    mask_white = cv2.inRange(hsv, lower_white, upper_white)
+    mask_white2 = cv2.inRange(hsv, config.LOWER_WHITE2, config.UPPER_WHITE2)
+    mask_white3 = cv2.inRange(hsv, config.LOWER_WHITE3, config.UPPER_WHITE3)
+    mask_white_all = np.bitwise_or(mask_white, mask_white2)
+    mask_white_all = np.bitwise_or(mask_white_all, mask_white3)
+
+    mask_black = cv2.inRange(hsv, lower_black, upper_black)
+    mask_black2 = cv2.inRange(hsv, lower_black2, upper_black2)
+    mask_black3 = cv2.inRange(hsv, config.LOWER_BLACK3, config.UPPER_BLACK3)
+    mask_black4 = cv2.inRange(hsv, config.LOWER_BLACK4, config.UPPER_BLACK4)
     mask_black_all = np.bitwise_or(mask_black, mask_black2)
+    mask_black_all = np.bitwise_or(mask_black_all, mask_black3)
+    mask_black_all = np.bitwise_or(mask_black_all, mask_black4)
+
+    mask_dark_gray = cv2.inRange(hsv, lower_dark_gray, upper_dark_gray)
+    mask_dark_gray2 = cv2.inRange(hsv, config.LOWER_DARK_GRAY2, config.UPPER_DARK_GRAY2)
+    mask_dark_gray3 = cv2.inRange(hsv, config.LOWER_DARK_GRAY3, config.UPPER_DARK_GRAY3)
+    mask_dark_gray4 = cv2.inRange(hsv, config.LOWER_DARK_GRAY4, config.UPPER_DARK_GRAY4)
+    mask_dg_all = np.bitwise_or(mask_dark_gray, mask_dark_gray2)
+    mask_dg_all = np.bitwise_or(mask_dg_all, mask_dark_gray3)
+    mask_dg_all = np.bitwise_or(mask_dg_all, mask_dark_gray4)
     print "      -->  inrange time: " + str(timer.getTimer())
 
     #bricks = [[1]*config.TRANSFORM_SIZE for x in range(config.TRANSFORM_SIZE)]
@@ -323,12 +354,13 @@ def detectBricks_window(resize_img):
     #print mask_blue.shape
     #print res_img.shape
     res_img[:] = config.COLOR_DARKGREEN
+    #res_img[mask_dark_gray2 == 255, :] = np.uint8([66,59,50])
     res_img[mask_blue == 255, :] = np.uint8([255,0,1])
-    res_img[mask_white == 255, :] = np.uint8([252,254,253])
-    res_img[mask_dark_gray == 255, :] = np.uint8([66,59,50])
+    res_img[mask_white_all == 255, :] = np.uint8([252,254,253])
     res_img[mask_brown == 255, :] = np.uint8([35,39,88])
     res_img[mask_brown2 == 255, :] = np.uint8([35,39,88])
     res_img[mask_black_all == 255, :] = np.uint8([18,9,5])
+    #res_img[mask_blue2 == 255, :] = np.uint8([255,0,1])
 
 #COLOR_BLACK = np.uint8([[[18,9,5]]])     
 #COLOR_WHITE = np.uint8([[[252,254,253]]])

@@ -87,10 +87,10 @@ def grayMosaic(img):
         for j in range(0,cols):
             if 180 < img[i][j] <= 255:
                 res_img[i][j] = config.COLOR_WHITE
-            elif 150 < img[i][j] <= 180:
+            elif 105 < img[i][j] <= 180:
                 res_img[i][j] = config.COLOR_BROWN
-            elif 105 < img[i][j] <= 150:
-                res_img[i][j] = config.COLOR_DARKGRAY
+            #elif 105 < img[i][j] <= 150:
+            #    res_img[i][j] = config.COLOR_DARKGRAY
             else:
                 res_img[i][j] = config.COLOR_BLACK
 
